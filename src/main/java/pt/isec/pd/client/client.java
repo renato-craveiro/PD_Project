@@ -1,2 +1,4 @@
-package pt.isec.pd.client;public class client {
+package pt.isec.pd.client;
+
+public class client {
 }

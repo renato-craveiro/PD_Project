@@ -11,6 +11,10 @@ public class userManagment {
         users.add(new user(name, NEstudante, email, password));
     }
 
+    public void createUser(user u) {
+        users.add(u);
+    }
+
     public boolean checkUser(user u) {
         return users.stream().anyMatch((user user) -> user.checkUser(u));
     }
