@@ -5,8 +5,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
 
 
 class managerCLients implements Runnable {
@@ -34,14 +32,60 @@ class managerCLients implements Runnable {
                             toClientSocket.getInetAddress().getHostAddress() + ":" +
                             toClientSocket.getPort()+"["+req.user.getName()+"]");
 
-                        /*if (!request.equalsIgnoreCase(TIME_REQUEST)) {
-                            System.out.println("Unexpected request");
-                            continue;
-                        }*/
-                    String response ="ok";
+                    if (!req.req.equalsIgnoreCase("REGISTER")
+                            && !req.req.equalsIgnoreCase("LOGIN")
+                            && !req.req.equalsIgnoreCase("LOGOUT")
+                            && !req.req.equalsIgnoreCase("LIST")
+                            && !req.req.equalsIgnoreCase("SEND")
+                            && !req.req.equalsIgnoreCase("RECEIVE")
+                            && !req.req.equalsIgnoreCase("QUIT")) {
+                        System.out.println("Unexpected request received from " +
+                                toClientSocket.getInetAddress().getHostAddress() + ":" +
+                                toClientSocket.getPort());
+                        String response ="Unexpected request!";
 
-                    oout.writeObject(response);
-                    oout.flush();
+                        oout.writeObject(response);
+                        oout.flush();
+                        return;
+
+                    }
+                    switch (req.req) {
+                        case "REGISTER":
+                            if(userManager.checkUser(req.user)){
+                                String response = "User already exists";
+
+                                oout.writeObject(response);
+                                oout.flush();
+
+
+                            }else {
+                                userManager.createUser(req.user);
+                                String response = "Added user";
+
+                                oout.writeObject(response);
+                                oout.flush();
+                            }
+                            break;
+                        case "LOGIN":
+                            //login(req, oout);
+                            break;
+                        case "LOGOUT":
+                            //logout(req, oout);
+                            break;
+                        case "LIST":
+                            //list(req, oout);
+                            break;
+                        case "SEND":
+                            //send(req, oout);
+                            break;
+                        case "RECEIVE":
+                            //receive(req, oout);
+                            break;
+                        case "QUIT":
+                            //quit(req, oout);
+                            break;
+                    }
+
                     // do something
                 }
 
@@ -62,12 +106,6 @@ class managerCLients implements Runnable {
 
 
 public class server {
-
-
-
-
-
-
     public static final String TIME_REQUEST = "TIME";
 
     public static void main(String args[]) {

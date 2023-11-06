@@ -1,6 +1,8 @@
 package pt.isec.pd.types;
 
 
+import java.io.Serializable;
+
 /**
  *
  * Registo de um novo utilizador, sendo este caraterizado por um nome, um número de
@@ -9,7 +11,7 @@ package pt.isec.pd.types;
  * ser único e serve de username.
  *
  */
-public class user {
+public class user implements Serializable {
     String name;
     String NEstudante;
     String email;
