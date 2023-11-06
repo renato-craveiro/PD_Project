@@ -9,115 +9,96 @@ import java.util.Calendar;
 import java.util.GregorianCalendar;
 
 
-class manageCLients implements Runnable{
-    Socket socket;
+class managerCLients implements Runnable {
+    Socket toClientSocket;
     userManagment userManager;
 
-    public manageCLients(Socket socket, userManagment userManager) {
-        this.socket = socket;
+    public managerCLients(Socket socket, userManagment userManager) {
+        this.toClientSocket = socket;
         this.userManager = userManager;
     }
 
-
-
     @Override
-    public void run() {
-        int myId;
-        int nWorkers;
-        long nIntervals;
-        double myResult;
+    public void run(){
+        int myID;
+        request req;
+        //System.out.println("NA THREAD");
+            try (
+                    ObjectOutputStream oout = new ObjectOutputStream(toClientSocket.getOutputStream());
+                    ObjectInputStream oin = new ObjectInputStream(toClientSocket.getInputStream())) {
 
-        //Cria um ObjectInputStream e um ObjectOutputStream associados ao socket s
-        try(ObjectInputStream in = new ObjectInputStream(this.socket.getInputStream())/***/;
-            ObjectOutputStream out = new ObjectOutputStream(this.socket.getOutputStream())/***/){
-            Object obj = in.readObject();
+                Object o = oin.readObject();
+                if (o instanceof request) {
+                    req = (request) o;
+                    System.out.println("Recebido \"" + req.req + "\" de " +
+                            toClientSocket.getInetAddress().getHostAddress() + ":" +
+                            toClientSocket.getPort()+"["+req.user.getName()+"]");
 
-            if(obj instanceof request cltReq) {
-                switch (cltReq.getReq()) {
-                    case "REGISTER":
-                        if (!userManager.checkUser(cltReq.getUser().getEmail())) {
-                            userManager.createUser(cltReq.getUser());
-                            out.writeObject("REGISTERED");
-                        } else {
-                            out.writeObject("NOT REGISTERED. USER ALREADY EXISTS");
-                        }
-                        break;
-                    case "LOGIN":
-                        if (userManager.checkUser(cltReq.getUser().getEmail())) {
-                            if (userManager.checkPassword(cltReq.getUser().getEmail(), cltReq.getUser().getPassword())) {
-                                userManager.getUser(cltReq.getUser().getEmail()).setLogged(true);
-                                out.writeObject("LOGGED IN");
-                                System.out.println(cltReq.getUser().getName() + " LOGGED IN");
-                            } else {
-                                out.writeObject("NOT LOGGED IN. WRONG PASSWORD");
-                            }
-                        }
+                        /*if (!request.equalsIgnoreCase(TIME_REQUEST)) {
+                            System.out.println("Unexpected request");
+                            continue;
+                        }*/
+                    String response ="ok";
 
-                            break;
-                            case "LOGOUT":
-                                break;
-                            case "LIST":
-                                break;
-                            case "SEND":
-                                break;
-                            case "RECEIVE":
-                                break;
-                            case "QUIT":
-                                break;
-                            default:
-                                break;
-                        }
+                    oout.writeObject(response);
+                    oout.flush();
+                    // do something
                 }
-            } catch (IOException | ClassNotFoundException ex) {
-            throw new RuntimeException(ex);
 
 
+
+            } catch (Exception e) {
+                System.out.println("Problema na comunicacao com o cliente " +
+                        toClientSocket.getInetAddress().getHostAddress() + ":" +
+                        toClientSocket.getPort() + "\n\t" + e);
             }
-            System.out.format("<%s> %.10f\n", Thread.currentThread().getName(), "ok");
-        }
+
+
+
     }
+}
+
+
+
 
 public class server {
-    static eventManagement eventManager;
-
-    static userManagment userManager;
-
-    public static final int MAX_SIZE = 4000;
-    //public static final String TIME_REQUEST = "TIME";
-    public static final int TIMEOUT = 10;
 
 
 
 
-    public static void main(String[] args) {
-        eventManager = new eventManagement();
-        userManager = new userManagment();
+
+
+    public static final String TIME_REQUEST = "TIME";
+
+    public static void main(String args[]) {
+        userManagment userManager = new userManagment();
         int nCreatedThreads = 0;
+        eventManagement eventManager = new eventManagement();
+        //String request;
+        request req;
         Thread thr;
 
-
-        if(args.length != 1){
+        /*if (args.length != 1) {
             System.out.println("Sintaxe: java TcpSerializedTimeServerIncomplete listeningPort");
             return;
-        }
+        }*/
 
-        try(ServerSocket socket = new ServerSocket(Integer.parseInt(args[0]))){
+        try (ServerSocket socket = new ServerSocket(/*Integer.parseInt(args[0]))*/5000)) {
 
             System.out.println("TCP Time Server iniciado no porto " + socket.getLocalPort() + " ...");
-            while(true){
+
+            while (true) {
                 Socket toClientSocket = socket.accept();
-                nCreatedThreads++;
-                thr = new Thread((Runnable) new manageCLients(toClientSocket , userManager), "Thread_"+nCreatedThreads);
+                thr = new Thread((Runnable) new managerCLients(toClientSocket, userManager), "Thread_" + nCreatedThreads);
                 thr.run();
+                nCreatedThreads++;
             }
 
-
-        }catch(NumberFormatException e){
+        } catch (NumberFormatException e) {
             System.out.println("O porto de escuta deve ser um inteiro positivo.");
-        }catch(IOException e){
-            System.out.println("Ocorreu um erro ao nivel do socket de escuta:\n\t"+e);
+        } catch (IOException e) {
+            System.out.println("Ocorreu um erro ao nivel do socket de escuta:\n\t" + e);
         }
-
 
 
     }
