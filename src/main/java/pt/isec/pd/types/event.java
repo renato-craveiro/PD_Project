@@ -95,7 +95,7 @@ public class event {
     }
 
     public String toClientString() {
-        return name + ";" + local + ";" + date + ";" + start;
+        return name + ";" + local + ";" + date.get(Calendar.DAY_OF_MONTH)+"/"+date.get(Calendar.MONTH)+"/"+date.get(Calendar.YEAR) + ";" + start.get(Calendar.HOUR_OF_DAY)+":"+start.get(Calendar.MINUTE);
     }
     public void addPresence(user u){
         usersPresent.add(u);

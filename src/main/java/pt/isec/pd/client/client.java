@@ -176,9 +176,9 @@ public class client {
 
         try (Socket connectionTest = new Socket(srvAdress, srvPort)) {
         } catch (ConnectException e) {
-            throw new Exception("Server is not running");
+            throw new Exception("Server nao esta a correr");
         } catch (IOException e) {
-            throw new IllegalStateException("Error while trying to check open server/port", e);
+            throw new IllegalStateException("Erro a tentar procurar por servidor/porto", e);
         }
 
 
@@ -186,13 +186,6 @@ public class client {
             System.out.println("Pressione enter para continuar");
             System.in.read();
         }
-
-        /*if(args.length != 2){
-            System.out.println("Sintaxe: java TcpSerializedTimeClientIncomplete serverAddress serverUdpPort");
-            return;
-        }*/
-
-
 
     }
 

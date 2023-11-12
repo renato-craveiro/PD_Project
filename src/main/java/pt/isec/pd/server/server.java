@@ -7,6 +7,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Calendar;
 import java.util.NoSuchElementException;
 
 
@@ -47,7 +48,7 @@ class managerCLients implements Runnable {
                         System.out.println("Unexpected request received from " +
                                 toClientSocket.getInetAddress().getHostAddress() + ":" +
                                 toClientSocket.getPort());
-                        String response ="Unexpected request!";
+                        String response ="Pedido nao esperado!";
 
                         oout.writeObject(response);
                         oout.flush();
@@ -65,7 +66,7 @@ class managerCLients implements Runnable {
 
                             }else {
                                 userManager.createUser(req.user);
-                                String response = "Added user";
+                                String response = "Utilizador criado!";
 
                                 oout.writeObject(response);
                                 oout.flush();
@@ -73,7 +74,7 @@ class managerCLients implements Runnable {
                             break;
                         case "LOGIN":
                             if(!userManager.checkUser(req.user)){
-                                String response = "User does not exist";
+                                String response = "Utilizador nao existente...";
 
                                 oout.writeObject(response);
                                 oout.flush();
@@ -84,7 +85,7 @@ class managerCLients implements Runnable {
                                 oout.writeObject(response);
                                 oout.flush();
                             }else{
-                                String response = "Wrong password";
+                                String response = "Palavra passe incorreta";
 
                                 oout.writeObject(response);
                                 oout.flush();
@@ -104,7 +105,7 @@ class managerCLients implements Runnable {
                                 }
                             }
                             if(counter==0){
-                                String response = "No events found";
+                                String response = "Nao foram encontrados eventos!";
 
                                 oout.writeObject(response);
                                 oout.flush();
@@ -122,7 +123,7 @@ class managerCLients implements Runnable {
                             //INSCREVER EM EVENTO
                             System.out.println("Evento a subscrever: "+req.otherParam);
                             if(req.otherParam == null){
-                                String response = "No event code provided";
+                                String response = "Nao foi fornecido nenhum codigo de evento";
 
                                 oout.writeObject(response);
                                 oout.flush();
@@ -132,7 +133,7 @@ class managerCLients implements Runnable {
                                 try {
                                     event ev = eventManager.getEventByCode(req.otherParam);
                                     if(ev.checkPresenceEmail(req.user.getEmail())){
-                                        String response = "Already subscribed to event";
+                                        String response = "Ja se encontra inscrito ao evento "+ev.getName()+"!";
 
                                         oout.writeObject(response);
                                         oout.flush();
@@ -140,13 +141,13 @@ class managerCLients implements Runnable {
                                         break;
                                     }
                                     ev.addPresence(req.user);
-                                    String response = "Subscribed to event";
+                                    String response = "Inscrito ao Evento "+ev.getName()+"!";
                                     System.out.println("SUBSCRITO!");
                                     oout.writeObject(response);
                                     oout.flush();
                                 }catch (NoSuchElementException e){
 
-                                    String response = "Event not found";
+                                    String response = "Evento nao encontrado";
 
                                     oout.writeObject(response);
                                     oout.flush();
@@ -211,9 +212,9 @@ public class server {
 
         try (ServerSocket socket = new ServerSocket(/*Integer.parseInt(args[0]))*/5000)) {
 
-            System.out.println("TCP Time Server iniciado no porto " + socket.getLocalPort() + " ...");
+            System.out.println("Servidor iniciado no porto " + socket.getLocalPort() + " ...");
 
-            eventManager.createEvent("Evento1", "Local1", null, null, null);
+            eventManager.createEvent("Evento1", "Local1", Calendar.getInstance(), Calendar.getInstance(), Calendar.getInstance());
             eventManager.getEvents().get(0).generateRandomCode();
             System.out.println("Codigo do evento: "+eventManager.getEvents().get(0).getCode());
             while (true) {
