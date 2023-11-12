@@ -25,6 +25,11 @@ public class event {
     Calendar date;
     Calendar start;
     Calendar end;
+
+    public int getCode() {
+        return code;
+    }
+
     int code;
     Calendar codeValidity;
 
@@ -89,12 +94,19 @@ public class event {
         return "event{ "+"id="+eventID + "name=" + name + ", local=" + local + ", date=" + date + ", start=" + start + ", end=" + end + " code=" + code + " codeValidity=" + codeValidity.toString() +'}';
     }
 
+    public String toClientString() {
+        return name + ";" + local + ";" + date + ";" + start;
+    }
     public void addPresence(user u){
         usersPresent.add(u);
     }
 
     public void removePresence(user u){
         usersPresent.remove(u);
+    }
+
+    public boolean checkPresenceEmail(String email){
+        return usersPresent.stream().anyMatch((user user) -> user.getEmail().equals(email));
     }
 
 }

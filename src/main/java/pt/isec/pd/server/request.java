@@ -8,6 +8,16 @@ public class request implements Serializable {
     String req;
 
     user user;
+
+    public String getOtherParam() {
+        return otherParam;
+    }
+
+    public void setOtherParam(String otherParam) {
+        this.otherParam = otherParam;
+    }
+
+    String otherParam;
     private static final String[] validRequests = {"REGISTER", "LOGIN", "LOGOUT", "LIST", "SEND", "RECEIVE", "QUIT"};
 
     public request (user user) {
@@ -22,6 +32,15 @@ public class request implements Serializable {
         if (isValid(req)) {
             this.user = user;
             this.req = req;
+        } else {
+            this.req = "INVALID";
+        }
+    }
+    public request(String req, user user, String other) {
+        if (isValid(req)) {
+            this.user = user;
+            this.req = req;
+            this.otherParam = other;
         } else {
             this.req = "INVALID";
         }

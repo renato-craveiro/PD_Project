@@ -1,19 +1,24 @@
 package pt.isec.pd.server;
 
+import pt.isec.pd.types.event;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.NoSuchElementException;
 
 
 class managerCLients implements Runnable {
     Socket toClientSocket;
     userManagment userManager;
+    eventManagement eventManager;
 
-    public managerCLients(Socket socket, userManagment userManager) {
+    public managerCLients(Socket socket, userManagment userManager, eventManagement evMgr) {
         this.toClientSocket = socket;
         this.userManager = userManager;
+        this.eventManager = evMgr;
     }
 
     @Override
@@ -67,15 +72,98 @@ class managerCLients implements Runnable {
                             }
                             break;
                         case "LOGIN":
+                            if(!userManager.checkUser(req.user)){
+                                String response = "User does not exist";
+
+                                oout.writeObject(response);
+                                oout.flush();
+                            }
+                            if(userManager.checkPassword(req.user.getEmail(), req.user.getPassword())) {
+                                String response = "OK";
+
+                                oout.writeObject(response);
+                                oout.flush();
+                            }else{
+                                String response = "Wrong password";
+
+                                oout.writeObject(response);
+                                oout.flush();
+                            }
                             //login(req, oout);
                             break;
                         case "LOGOUT":
                             //logout(req, oout);
                             break;
                         case "LIST":
+                            StringBuilder sb = new StringBuilder();
+                            int counter = 0;
+                            for (event e : eventManager.getEvents()) {
+                                if(e.checkPresenceEmail(req.user.getEmail())){
+                                    sb.append(e.toClientString());
+                                    counter++;
+                                }
+                            }
+                            if(counter==0){
+                                String response = "No events found";
+
+                                oout.writeObject(response);
+                                oout.flush();
+                            }else {
+                                String header = "Descricao;Local;Data;HoraInicio\n";
+                                String response = header+sb.toString();
+
+                                oout.writeObject(response);
+                                oout.flush();
+                            }
+
                             //list(req, oout);
                             break;
                         case "SEND":
+                            //INSCREVER EM EVENTO
+                            System.out.println("Evento a subscrever: "+req.otherParam);
+                            if(req.otherParam == null){
+                                String response = "No event code provided";
+
+                                oout.writeObject(response);
+                                oout.flush();
+                                System.out.println("SEM EVENTO!");
+                                break;
+                            }else {
+                                try {
+                                    event ev = eventManager.getEventByCode(req.otherParam);
+                                    if(ev.checkPresenceEmail(req.user.getEmail())){
+                                        String response = "Already subscribed to event";
+
+                                        oout.writeObject(response);
+                                        oout.flush();
+                                        System.out.println("JA SUBSCRITO!");
+                                        break;
+                                    }
+                                    ev.addPresence(req.user);
+                                    String response = "Subscribed to event";
+                                    System.out.println("SUBSCRITO!");
+                                    oout.writeObject(response);
+                                    oout.flush();
+                                }catch (NoSuchElementException e){
+
+                                    String response = "Event not found";
+
+                                    oout.writeObject(response);
+                                    oout.flush();
+                                    break;
+                                }
+
+                                /*if(ev == null){
+                                    String response = "Event not found";
+
+                                    oout.writeObject(response);
+                                    oout.flush();
+                                    System.out.println("EVENTO NAO ENCONTRADO!");
+                                    break;
+                                }*/
+
+                            }
+
                             //send(req, oout);
                             break;
                         case "RECEIVE":
@@ -125,9 +213,12 @@ public class server {
 
             System.out.println("TCP Time Server iniciado no porto " + socket.getLocalPort() + " ...");
 
+            eventManager.createEvent("Evento1", "Local1", null, null, null);
+            eventManager.getEvents().get(0).generateRandomCode();
+            System.out.println("Codigo do evento: "+eventManager.getEvents().get(0).getCode());
             while (true) {
                 Socket toClientSocket = socket.accept();
-                thr = new Thread((Runnable) new managerCLients(toClientSocket, userManager), "Thread_" + nCreatedThreads);
+                thr = new Thread((Runnable) new managerCLients(toClientSocket, userManager,eventManager), "Thread_" + nCreatedThreads);
                 thr.run();
                 nCreatedThreads++;
             }

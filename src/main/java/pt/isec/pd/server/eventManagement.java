@@ -10,8 +10,21 @@ import java.util.stream.*;
 import java.util.ArrayList;
 
 public class eventManagement {
-    ArrayList<event> events = new ArrayList<>();
 
+
+    private ArrayList<event> events = new ArrayList<>();
+    public ArrayList<event> getEvents() {
+        return events;
+    }
+
+    /*public void setEvents(ArrayList<event> events) {
+        this.events = events;
+    }*/
+
+
+
+
+    //-----------------------CSV???-----------------------
 
     /*//https://www.baeldung.com/java-csv
     public String escapeSpecialCharacters(String data) {
@@ -31,8 +44,14 @@ public class eventManagement {
 
     //https://www.baeldung.com/java-csv end*/
 
+
+
     public void createEvent(String name, String local, Calendar date, Calendar start, Calendar end) {
         events.add(new event(name, local, date, start, end));
+    }
+
+    public event getEventByCode(String otherParam) {
+        return events.stream().filter((event event) -> event.getCode() == Integer.parseInt(otherParam)).findFirst().get();
     }
 
 
