@@ -9,6 +9,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Calendar;
 import java.util.NoSuchElementException;
+import java.util.Scanner;
 
 
 class managerCLients implements Runnable {
@@ -111,7 +112,7 @@ class managerCLients implements Runnable {
                                 oout.flush();
                             }else {
                                 String header = "Descricao;Local;Data;HoraInicio\n";
-                                String response = header+sb.toString();
+                                String response = header+sb.toString()+"\n";
 
                                 oout.writeObject(response);
                                 oout.flush();
@@ -192,6 +193,117 @@ class managerCLients implements Runnable {
 }
 
 
+class KBMgmt implements Runnable{
+    boolean adminLogged = false;
+    eventManagement eventManager;
+
+    public KBMgmt(boolean adminLogged, eventManagement eventManager) {
+        this.adminLogged = adminLogged;
+        this.eventManager = eventManager;
+    }
+
+
+    private void createEvent(){
+        int day,mth,yr;
+        int startHr, startMn, endHr, endMn;
+        Scanner sc = new Scanner(System.in);
+        System.out.println("Nome do evento:");
+        String name = sc.nextLine();
+        System.out.println("Local do evento:");
+        String local = sc.nextLine();
+        System.out.println("Data do evento (dd/mm/aaaa):");
+        String date = sc.nextLine();
+        day = Integer.parseInt(date.split("/")[0]);
+        mth = Integer.parseInt(date.split("/")[1]);
+        yr = Integer.parseInt(date.split("/")[2]);
+        System.out.println("Hora de inicio do evento (hh:mm):");
+        String start = sc.nextLine();
+        startHr = Integer.parseInt(start.split(":")[0]);
+        startMn = Integer.parseInt(start.split(":")[1]);
+        System.out.println("Hora de fim do evento (hh:mm):");
+        String end = sc.nextLine();
+        endHr = Integer.parseInt(end.split(":")[0]);
+        endMn = Integer.parseInt(end.split(":")[1]);
+
+        Calendar eventDate = Calendar.getInstance();
+        eventDate.set(yr,mth,day);
+        Calendar eventStart = Calendar.getInstance();
+        eventStart.set(Calendar.HOUR_OF_DAY,startHr);
+        eventStart.set(Calendar.MINUTE,startMn);
+        Calendar eventEnd = Calendar.getInstance();
+        eventEnd.set(Calendar.HOUR_OF_DAY,endHr);
+        eventEnd.set(Calendar.MINUTE,endMn);
+        eventManager.createEvent(name, local, eventDate, eventStart, eventEnd);
+        eventManager.getEvents().get(eventManager.getEvents().size()-1).generateRandomCode();
+        System.out.println("Codigo do evento: "+eventManager.getEvents().get(eventManager.getEvents().size()-1).getCode());
+    }
+
+    @Override
+    public void run() {
+        Scanner sc = new Scanner(System.in);
+        String buffer;
+        while(true){
+            System.out.println("Menu:\n\n1-admin login");
+            if(adminLogged){
+                System.out.println("2-criar evento\n" +
+                        "3-listar eventos\n" +
+                        "4-remover evento\n" +
+                        "5-editar evento\n" +
+                        "6-gerar código evento\n" +
+                        "7-consultar presenças\n" +
+                        "8-Obter ficheiro csv\n" +
+                        "9-eliminar presença\n" +
+                        "10-inserir presença\n" +
+                        "11-logout\n");
+            }
+            System.out.println("Escreva \"exit\" para terminar o servidor");
+            buffer = sc.nextLine();
+            switch (buffer){
+                case "1":
+                    System.out.println("Email:");
+                    String email = sc.nextLine();
+                    System.out.println("Password:");
+                    String password = sc.nextLine();
+                    if(email.equals("admin") && password.equals("admin")){
+                        adminLogged = true;
+                        System.out.println("Login efetuado com sucesso");
+                    }else{
+                        System.out.println("Login falhou");
+                    }
+                    break;
+
+                case "2":
+                    createEvent();
+                    break;
+                case "3":
+                    for (event e : eventManager.getEvents()) {
+                        System.out.println(e.toString());
+                    }
+                    break;
+                case "4":
+                    System.out.println("Codigo do evento:");
+                    String code = sc.nextLine();
+                    eventManager.getEvents().remove(eventManager.getEventByCode(code));
+                    break;
+                case "5":
+                    break;
+
+                case "exit":
+                    System.exit(0);
+                    break;
+                default:
+                    System.out.println("Opção inválida");
+                    break;
+            }
+
+            /*if(buffer.equalsIgnoreCase("exit")){
+                System.exit(0);
+            }*/
+        }
+
+    }
+}
+
 
 
 public class server {
@@ -210,6 +322,8 @@ public class server {
             return;
         }*/
 
+        Thread kb = new Thread(new KBMgmt(false, eventManager));
+        kb.start();
         try (ServerSocket socket = new ServerSocket(/*Integer.parseInt(args[0]))*/5000)) {
 
             System.out.println("Servidor iniciado no porto " + socket.getLocalPort() + " ...");
@@ -220,7 +334,7 @@ public class server {
             while (true) {
                 Socket toClientSocket = socket.accept();
                 thr = new Thread((Runnable) new managerCLients(toClientSocket, userManager,eventManager), "Thread_" + nCreatedThreads);
-                thr.run();
+                thr.start();
                 nCreatedThreads++;
             }
 
