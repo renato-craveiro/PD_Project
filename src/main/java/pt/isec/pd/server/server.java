@@ -25,7 +25,7 @@ class jdbcManager{
     private static ResultSet rs;
     private static String sql;
     private static String url = "jdbc:sqlite:database.db";
-    
+
 }
 
 
