@@ -1,6 +1,7 @@
 package pt.isec.pd.server;
 
 import pt.isec.pd.types.event;
+import pt.isec.pd.types.user;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -10,6 +11,22 @@ import java.net.Socket;
 import java.util.Calendar;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.ResultSet;
+import java.sql.Statement;
+
+class jdbcManager{
+    //BASE DE DADOS ACESSOS ASYNC E ESSAS CENAS!!!! EM SQLITE
+
+    private static Connection conn;
+    private static Statement stmt;
+    private static ResultSet rs;
+    private static String sql;
+    private static String url = "jdbc:sqlite:database.db";
+    
+}
 
 
 class managerCLients implements Runnable {
@@ -196,10 +213,12 @@ class managerCLients implements Runnable {
 class KBMgmt implements Runnable{
     boolean adminLogged = false;
     eventManagement eventManager;
+    userManagment userManager;
 
-    public KBMgmt(boolean adminLogged, eventManagement eventManager) {
+    public KBMgmt(boolean adminLogged, eventManagement eventManager, userManagment userManager) {
         this.adminLogged = adminLogged;
         this.eventManager = eventManager;
+        this.userManager = userManager;
     }
 
 
@@ -286,8 +305,44 @@ class KBMgmt implements Runnable{
                     eventManager.getEvents().remove(eventManager.getEventByCode(code));
                     break;
                 case "5":
-                    break;
 
+                    break;
+                case "6":
+                    System.out.println("Codigo do evento:");
+                    String code2 = sc.nextLine();
+                    eventManager.getEventByCode(code2).generateRandomCode();
+                    System.out.println("Codigo do evento: "+eventManager.getEventByCode(code2).getCode());
+                    break;
+                case "7":
+                    System.out.println("Codigo do evento:");
+                    String code3 = sc.nextLine();
+                    System.out.println("Presenças no evento"+eventManager.getEventByCode(code3).getName()+":");
+                    for (user u : eventManager.getEventByCode(code3).getUsersPresent())
+                    {
+                        System.out.println(u.toString());
+                    }
+                    System.out.println(eventManager.getEventByCode(code3).getUsersPresent().toString());
+                    break;
+                case "8":
+                    //csv
+                    break;
+                case "9":
+                    System.out.println("Codigo do evento:");
+                    String code4 = sc.nextLine();
+                    System.out.println("Email do utilizador:");
+                    String email2 = sc.nextLine();
+                    eventManager.getEventByCode(code4).removePresence(userManager.getUser(email2));
+                    break;
+                case "10":
+                    System.out.println("Codigo do evento:");
+                    String code5 = sc.nextLine();
+                    System.out.println("Email do utilizador:");
+                    String email3 = sc.nextLine();
+                    eventManager.getEventByCode(code5).addPresence(userManager.getUser(email3));
+                    break;
+                case "11":
+                    adminLogged = false;
+                    break;
                 case "exit":
                     System.exit(0);
                     break;
@@ -322,7 +377,7 @@ public class server {
             return;
         }*/
 
-        Thread kb = new Thread(new KBMgmt(false, eventManager));
+        Thread kb = new Thread(new KBMgmt(false, eventManager, userManager));
         kb.start();
         try (ServerSocket socket = new ServerSocket(/*Integer.parseInt(args[0]))*/5000)) {
 

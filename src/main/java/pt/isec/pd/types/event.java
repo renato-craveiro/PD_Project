@@ -19,6 +19,11 @@ import java.util.Calendar;
  */
 public class event {
     private static int eventID = 0;
+
+    public ArrayList<user> getUsersPresent() {
+        return usersPresent;
+    }
+
     ArrayList<user> usersPresent = new ArrayList<>();
     String name;
     String local;
