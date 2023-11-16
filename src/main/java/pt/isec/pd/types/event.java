@@ -1,6 +1,7 @@
 package pt.isec.pd.types;
 
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 
@@ -30,11 +31,6 @@ public class event {
     Calendar date;
     Calendar start;
     Calendar end;
-
-    public int getCode() {
-        return code;
-    }
-
     int code;
     Calendar codeValidity;
 
@@ -52,6 +48,10 @@ public class event {
         codeValidity = Calendar.getInstance();
         codeValidity.add(Calendar.MINUTE, 5);
         code = (int) (Math.random() * 1000000);
+    }
+
+    public int getCode() {
+        return code;
     }
 
     public String getName() {
@@ -94,13 +94,27 @@ public class event {
         this.end = end;
     }
 
+
+    //Recebe um Calender date, e retorna uma String no formato dd/mm/yyyy dessa date
+    public String getFormatDate(Calendar calendar) {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+        return dateFormat.format(calendar.getTime());
+    }
+    //Recebe um Calender date, e retorna uma String no formato hh:mm dessa date
+    public String getFormatTime(Calendar calendar) {
+        SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm");
+        return timeFormat.format(calendar.getTime());
+    }
+
     @Override
     public String toString() {
-        return "event{ "+"id="+eventID + "name=" + name + ", local=" + local + ", date=" + date + ", start=" + start + ", end=" + end + " code=" + code + " codeValidity=" + codeValidity.toString() +'}';
+        return "event{ "+"id="+eventID + " name=" + name + ", local=" + local +", date=" + getFormatDate(date) + ", start=" + getFormatTime(start) + ", end=" + getFormatTime(end) + " code=" + code + " codeValidity=" + getFormatTime(codeValidity) +'}';
+        //return "event{ "+"id="+eventID + "name=" + name + ", local=" + local + ", date=" + date + ", start=" + start + ", end=" + end + " code=" + code + " codeValidity=" + codeValidity.toString() +'}';
     }
 
     public String toClientString() {
-        return name + ";" + local + ";" + date.get(Calendar.DAY_OF_MONTH)+"/"+date.get(Calendar.MONTH)+"/"+date.get(Calendar.YEAR) + ";" + start.get(Calendar.HOUR_OF_DAY)+":"+start.get(Calendar.MINUTE);
+        return name + ";" + local + ";" + getFormatDate(date) + ";" + getFormatTime(start);
+        //return name + ";" + local + ";" + date.get(Calendar.DAY_OF_MONTH)+"/"+date.get(Calendar.MONTH)+"/"+date.get(Calendar.YEAR) + ";" + start.get(Calendar.HOUR_OF_DAY)+":"+start.get(Calendar.MINUTE);
     }
     public void addPresence(user u){
         usersPresent.add(u);

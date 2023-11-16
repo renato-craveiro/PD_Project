@@ -8,7 +8,10 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 import java.sql.Connection;
@@ -222,16 +225,25 @@ class KBMgmt implements Runnable{
     }
 
 
-    private void createEvent(){
-        int day,mth,yr;
+    private void createEvent() {
+
+        boolean sucsess = false;
+        int day, mth, yr;
         int startHr, startMn, endHr, endMn;
+        Date dateTime = null, startHourTime = null, endHourTime = null;
         Scanner sc = new Scanner(System.in);
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+        SimpleDateFormat hourFormat = new SimpleDateFormat("hh:mm");
+
+
         System.out.println("Nome do evento:");
         String name = sc.nextLine();
+
         System.out.println("Local do evento:");
         String local = sc.nextLine();
-        System.out.println("Data do evento (dd/mm/aaaa):");
-        String date = sc.nextLine();
+
+
+        /*
         day = Integer.parseInt(date.split("/")[0]);
         mth = Integer.parseInt(date.split("/")[1]);
         yr = Integer.parseInt(date.split("/")[2]);
@@ -255,6 +267,60 @@ class KBMgmt implements Runnable{
         eventManager.createEvent(name, local, eventDate, eventStart, eventEnd);
         eventManager.getEvents().get(eventManager.getEvents().size()-1).generateRandomCode();
         System.out.println("Codigo do evento: "+eventManager.getEvents().get(eventManager.getEvents().size()-1).getCode());
+        */
+
+
+
+        while (!sucsess){
+
+            System.out.println("Data do evento (dd/mm/aaaa):");
+            String date = sc.nextLine();
+
+            try {
+                dateTime = dateFormat.parse(date);
+                sucsess = true;
+            } catch (ParseException e) {
+                System.out.println("Formato de data/hora inválido. Usa dd/mm/aaaa.");
+            }
+
+        }
+        sucsess = false;
+        while (!sucsess){
+            System.out.println("Hora de inicio do evento (hh:mm):");
+            String start = sc.nextLine();
+            try {
+                startHourTime = hourFormat.parse(start);
+                sucsess = true;
+            } catch (ParseException e) {
+                System.out.println("Formato de hora inválido. Usa hh:mm.");
+            }
+        }
+        sucsess = false;
+        while (!sucsess){
+            System.out.println("Hora de fim do evento (hh:mm):");
+            String end = sc.nextLine();
+            try {
+                endHourTime = hourFormat.parse(end);
+                sucsess = true;
+            } catch (ParseException e) {
+                System.out.println("Formato de hora inválido. Usa hh:mm.");
+            }
+        }
+
+        Calendar eventDate = Calendar.getInstance();
+        eventDate.setTime(dateTime);
+
+        Calendar eventStart = Calendar.getInstance();
+        eventStart.set(Calendar.HOUR_OF_DAY,startHourTime.getHours());
+        eventStart.set(Calendar.MINUTE,startHourTime.getMinutes());
+
+        Calendar eventEnd = Calendar.getInstance();
+        eventEnd.set(Calendar.HOUR_OF_DAY,endHourTime.getHours());
+        eventEnd.set(Calendar.MINUTE,endHourTime.getMinutes());
+
+        eventManager.createEvent(name, local, eventDate, eventStart, eventEnd);
+        eventManager.getEvents().get(eventManager.getEvents().size()-1).generateRandomCode();
+        System.out.println("Codigo do evento: "+eventManager.getEvents().get(eventManager.getEvents().size()-1).getCode());
     }
 
     @Override
@@ -264,7 +330,8 @@ class KBMgmt implements Runnable{
         while(true){
             System.out.println("Menu:\n\n1-admin login");
             if(adminLogged){
-                System.out.println("2-criar evento\n" +
+                System.out.println(
+                        "2-criar evento\n" +
                         "3-listar eventos\n" +
                         "4-remover evento\n" +
                         "5-editar evento\n" +
@@ -273,7 +340,8 @@ class KBMgmt implements Runnable{
                         "8-Obter ficheiro csv\n" +
                         "9-eliminar presença\n" +
                         "10-inserir presença\n" +
-                        "11-logout\n");
+                        "11-logout\n"
+                );
             }
             System.out.println("Escreva \"exit\" para terminar o servidor");
             buffer = sc.nextLine();
