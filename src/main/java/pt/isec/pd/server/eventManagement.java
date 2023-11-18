@@ -1,5 +1,6 @@
 package pt.isec.pd.server;
 
+import pt.isec.pd.server.databaseManagement.EventDatabaseManager;
 import pt.isec.pd.types.event;
 
 import java.io.File;
@@ -11,11 +12,17 @@ import java.util.ArrayList;
 
 public class eventManagement {
 
-
+    private EventDatabaseManager dbManager;
     private ArrayList<event> events = new ArrayList<>();
     public ArrayList<event> getEvents() {
         return events;
     }
+
+    public eventManagement(EventDatabaseManager dbManager) {
+        this.dbManager = dbManager;
+        this.events = (ArrayList<event>) dbManager.loadEvents();
+    }
+
 
     /*public void setEvents(ArrayList<event> events) {
         this.events = events;
@@ -47,7 +54,16 @@ public class eventManagement {
 
 
     public void createEvent(String name, String local, Calendar date, Calendar start, Calendar end) {
-        events.add(new event(name, local, date, start, end));
+        event newEvent = new event(name, local, date, start, end);
+        events.add(newEvent);
+        dbManager.saveEvent(newEvent);
+
+        //events.add(new event(name, local, date, start, end));
+    }
+
+    public void removeEvent(int code) {
+        events.removeIf(e -> e.getCode() == code);
+        dbManager.deleteEvent(code);
     }
 
     public event getEventByCode(String otherParam) {

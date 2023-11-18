@@ -1,5 +1,7 @@
 package pt.isec.pd.server;
 
+import pt.isec.pd.server.databaseManagement.EventDatabaseManager;
+import pt.isec.pd.server.databaseManagement.UserDatabaseManager;
 import pt.isec.pd.types.event;
 import pt.isec.pd.types.user;
 
@@ -347,16 +349,27 @@ class KBMgmt implements Runnable{
             buffer = sc.nextLine();
             switch (buffer){
                 case "1":
+                    if(!userManager.checkUser("admin")){
+                        //userManager.createUser(new user("admin","admin","admin","admin"));
+                        System.out.println("Admin nao existe... Crie um admin primeiro!");
+                        break;
+                    }
                     System.out.println("Email:");
                     String email = sc.nextLine();
                     System.out.println("Password:");
                     String password = sc.nextLine();
-                    if(email.equals("admin") && password.equals("admin")){
+
+
+                    if(userManager.getUser("admin").getEmail().equals(email) && userManager.getUser("admin").getPassword().equals( password)) {
+                        adminLogged = true;
+                        System.out.println("Login efetuado com sucesso. Seja bem vindo" + userManager.getUser("admin").getName() +"!");
+                    }
+                    /*if(email.equals("admin") && password.equals("admin")){
                         adminLogged = true;
                         System.out.println("Login efetuado com sucesso");
                     }else{
                         System.out.println("Login falhou");
-                    }
+                    }*/
                     break;
 
                 case "2":
@@ -411,6 +424,18 @@ class KBMgmt implements Runnable{
                 case "11":
                     adminLogged = false;
                     break;
+
+                case "debug":
+                    System.out.println("Utilizadores:");
+                    for (user u : userManager.users) {
+                        System.out.println(u.toString());
+                    }
+                    System.out.println("Eventos:");
+                    for (event e : eventManager.getEvents()) {
+                        System.out.println(e.toString());
+                    }
+                    break;
+
                 case "exit":
                     System.exit(0);
                     break;
@@ -430,12 +455,15 @@ class KBMgmt implements Runnable{
 
 
 public class server {
-    public static final String TIME_REQUEST = "TIME";
+    public static final String DB_USER ="users";
+
+    public static final String DB_EVENT ="events";
+
 
     public static void main(String args[]) {
-        userManagment userManager = new userManagment();
+        userManagment userManager = new userManagment(new UserDatabaseManager(DB_USER));
         int nCreatedThreads = 0;
-        eventManagement eventManager = new eventManagement();
+        eventManagement eventManager = new eventManagement(new EventDatabaseManager(DB_EVENT));
         //String request;
         request req;
         Thread thr;

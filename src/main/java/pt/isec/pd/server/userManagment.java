@@ -1,18 +1,28 @@
 package pt.isec.pd.server;
 
+import pt.isec.pd.server.databaseManagement.UserDatabaseManager;
 import pt.isec.pd.types.user;
 
 import java.util.ArrayList;
 
 public class userManagment {
     ArrayList<user> users = new ArrayList<>();
+    private UserDatabaseManager dbManager;
 
-    public void createUser(String name, String NEstudante, String email, String password) {
-        users.add(new user(name, NEstudante, email, password));
+    public userManagment(UserDatabaseManager dbManager) {
+        this.dbManager = dbManager;
+        this.users = (ArrayList<user>) dbManager.loadUsers();
     }
 
-    public void createUser(user u) {
+    public synchronized void createUser(String name, String NEstudante, String email, String password) {
+        user tmp = new user(name, NEstudante, email, password);
+        users.add(tmp);
+        dbManager.saveUser(tmp);
+    }
+
+    public synchronized void  createUser(user u) {
         users.add(u);
+        dbManager.saveUser(u);
     }
 
     public boolean checkUser(user u) {
@@ -31,11 +41,11 @@ public class userManagment {
         return users.stream().filter((user user) -> user.getEmail().equals(email)).findFirst().get();
     }
 
-    public void removeUser(String email) {
+    public synchronized void removeUser(String email) {
         users.removeIf((user user) -> user.getEmail().equals(email));
     }
 
-    public void removeUser(user u) {
+    public synchronized void removeUser(user u) {
         users.removeIf((user user) -> user.checkUser(u));
     }
 

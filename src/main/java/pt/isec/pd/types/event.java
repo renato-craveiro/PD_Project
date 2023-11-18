@@ -31,7 +31,21 @@ public class event {
     Calendar date;
     Calendar start;
     Calendar end;
+
+    public void setCode(int code) {
+        this.code = code;
+    }
+
     int code;
+
+    public Calendar getCodeValidity() {
+        return codeValidity;
+    }
+
+    public void setCodeValidity(Calendar codeValidity) {
+        this.codeValidity = codeValidity;
+    }
+
     Calendar codeValidity;
 
     public event(String name, String local, Calendar date, Calendar start, Calendar end) {
