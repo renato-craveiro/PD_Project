@@ -22,7 +22,7 @@ import java.sql.SQLException;
 import java.sql.ResultSet;
 import java.sql.Statement;
 
-class jdbcManager{
+/*class jdbcManager{
     //BASE DE DADOS ACESSOS ASYNC E ESSAS CENAS!!!! EM SQLITE
 
     private static Connection conn;
@@ -31,6 +31,27 @@ class jdbcManager{
     private static String sql;
     private static String url = "jdbc:sqlite:database.db";
 
+}*/
+
+
+class EventValidityChecker implements Runnable{
+    eventManagement eventManager;
+
+    public EventValidityChecker(eventManagement eventManager) {
+        this.eventManager = eventManager;
+    }
+
+    @Override
+    public void run() {
+        while(true){
+            eventManager.checkEventsValidity();
+            /*try {
+                Thread.sleep(60000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }*/
+        }
+    }
 }
 
 
@@ -381,45 +402,59 @@ class KBMgmt implements Runnable{
                     }
                     break;
                 case "4":
-                    System.out.println("Codigo do evento:");
-                    String code = sc.nextLine();
-                    eventManager.getEvents().remove(eventManager.getEventByCode(code));
+                    int id;
+                    System.out.println("ID do evento:");
+                    String strID = sc.nextLine();
+                    id = Integer.parseInt(strID);
+                    if(eventManager.removeEvent(id)){
+                        System.out.println("Evento removido com sucesso!");
+                    }else{
+                        System.out.println("Evento nao encontrado!");
+                    }
                     break;
                 case "5":
 
                     break;
                 case "6":
-                    System.out.println("Codigo do evento:");
-                    String code2 = sc.nextLine();
-                    eventManager.getEventByCode(code2).generateRandomCode();
-                    System.out.println("Codigo do evento: "+eventManager.getEventByCode(code2).getCode());
+                    System.out.println("ID do evento:");
+                    String strID2 = sc.nextLine();
+                    int id2 = Integer.parseInt(strID2);
+                    //eventManager.getEventByCode(strID2).generateRandomCode();
+                    eventManager.getEventById(id2).generateRandomCode();
+                    System.out.println("Codigo do evento: "+eventManager.getEventById(id2).getCode());
+                    eventManager.updateEventDB(id2);
                     break;
                 case "7":
-                    System.out.println("Codigo do evento:");
-                    String code3 = sc.nextLine();
-                    System.out.println("Presenças no evento"+eventManager.getEventByCode(code3).getName()+":");
-                    for (user u : eventManager.getEventByCode(code3).getUsersPresent())
+                    System.out.println("ID do evento:");
+                    String strID3 = sc.nextLine();
+                    int id3 = Integer.parseInt(strID3);
+                    System.out.println("Presenças no evento"+eventManager.getEventById(id3).getName()+":");
+                    for (user u : eventManager.getEventById(id3).getUsersPresent())
                     {
                         System.out.println(u.toString());
                     }
-                    System.out.println(eventManager.getEventByCode(code3).getUsersPresent().toString());
+                    System.out.println(eventManager.getEventById(id3).getUsersPresent().toString());
                     break;
                 case "8":
                     //csv
                     break;
                 case "9":
-                    System.out.println("Codigo do evento:");
+                    System.out.println("ID do evento:");
                     String code4 = sc.nextLine();
+                    int id4 = Integer.parseInt(code4);
                     System.out.println("Email do utilizador:");
                     String email2 = sc.nextLine();
-                    eventManager.getEventByCode(code4).removePresence(userManager.getUser(email2));
+                    eventManager.getEventById(id4).removePresence(userManager.getUser(email2));
+                    eventManager.updateEventDB(id4);
                     break;
                 case "10":
-                    System.out.println("Codigo do evento:");
+                    System.out.println("ID do evento:");
                     String code5 = sc.nextLine();
+                    int id5 = Integer.parseInt(code5);
                     System.out.println("Email do utilizador:");
                     String email3 = sc.nextLine();
-                    eventManager.getEventByCode(code5).addPresence(userManager.getUser(email3));
+                    eventManager.getEventById(id5).addPresence(userManager.getUser(email3));
+                    eventManager.updateEventDB(id5);
                     break;
                 case "11":
                     adminLogged = false;
@@ -459,27 +494,37 @@ public class server {
 
     public static final String DB_EVENT ="events";
 
+    public static final String SQLITEDB ="presences";
+
 
     public static void main(String args[]) {
-        userManagment userManager = new userManagment(new UserDatabaseManager(DB_USER));
+        userManagment userManager = new userManagment(new UserDatabaseManager(SQLITEDB));
         int nCreatedThreads = 0;
-        eventManagement eventManager = new eventManagement(new EventDatabaseManager(DB_EVENT));
+        userManager.createAdminIfNotExists();
+        eventManagement eventManager = new eventManagement(new EventDatabaseManager(SQLITEDB));
         //String request;
         request req;
         Thread thr;
+
+        eventManager.checkEventsValidity();
 
         /*if (args.length != 1) {
             System.out.println("Sintaxe: java TcpSerializedTimeServerIncomplete listeningPort");
             return;
         }*/
 
+        Thread eventValidityChecker = new Thread(new EventValidityChecker(eventManager));
+        eventValidityChecker.start();
+
         Thread kb = new Thread(new KBMgmt(false, eventManager, userManager));
         kb.start();
         try (ServerSocket socket = new ServerSocket(/*Integer.parseInt(args[0]))*/5000)) {
 
             System.out.println("Servidor iniciado no porto " + socket.getLocalPort() + " ...");
-
-            eventManager.createEvent("Evento1", "Local1", Calendar.getInstance(), Calendar.getInstance(), Calendar.getInstance());
+            Calendar end = Calendar.getInstance();
+            //now.setTime(new Date());
+            end.add(Calendar.HOUR, 1);
+            eventManager.createEvent("Evento1", "Local1", Calendar.getInstance(), Calendar.getInstance(), end);
             eventManager.getEvents().get(0).generateRandomCode();
             System.out.println("Codigo do evento: "+eventManager.getEvents().get(0).getCode());
             while (true) {

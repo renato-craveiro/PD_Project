@@ -4,6 +4,7 @@ package pt.isec.pd.types;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Criação de um evento, sendo este caracterizado pelo nome, local, data de realização,
@@ -19,8 +20,17 @@ import java.util.Calendar;
  * deixam de ser válidos);
  */
 public class event {
-    private static int eventID = 0;
+    public int getId() {
+        return id;
+    }
 
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    //private static int eventID = 0;
+    int id;
+    private static final AtomicInteger count = new AtomicInteger(0);
     public ArrayList<user> getUsersPresent() {
         return usersPresent;
     }
@@ -49,7 +59,8 @@ public class event {
     Calendar codeValidity;
 
     public event(String name, String local, Calendar date, Calendar start, Calendar end) {
-        eventID++;
+        //eventID++;
+        id=count.incrementAndGet();
         setName(name);
         setLocal(local);
         setDate(date);
@@ -122,7 +133,7 @@ public class event {
 
     @Override
     public String toString() {
-        return "event{ "+"id="+eventID + " name=" + name + ", local=" + local +", date=" + getFormatDate(date) + ", start=" + getFormatTime(start) + ", end=" + getFormatTime(end) + " code=" + code + " codeValidity=" + getFormatTime(codeValidity) +'}';
+        return "event{ "+"id="+id + " name=" + name + ", local=" + local +", date=" + getFormatDate(date) + ", start=" + getFormatTime(start) + ", end=" + getFormatTime(end) + " code=" + code + " codeValidity=" + getFormatTime(codeValidity) +'}';
         //return "event{ "+"id="+eventID + "name=" + name + ", local=" + local + ", date=" + date + ", start=" + start + ", end=" + end + " code=" + code + " codeValidity=" + codeValidity.toString() +'}';
     }
 
@@ -135,7 +146,9 @@ public class event {
     }
 
     public void removePresence(user u){
-        usersPresent.remove(u);
+
+        usersPresent.removeIf(user -> user.getEmail().equals(u.getEmail()));
+        /*usersPresent.remove(u);*/
     }
 
     public boolean checkPresenceEmail(String email){

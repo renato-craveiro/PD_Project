@@ -14,6 +14,20 @@ public class userManagment {
         this.users = (ArrayList<user>) dbManager.loadUsers();
     }
 
+    public void createAdminIfNotExists() {
+        String adminEmail = "admin";  // You can set the admin email
+        String adminPassword = "admin"; // You can set the admin password
+
+        if (!dbManager.userExists(adminEmail)) {
+            // Create the admin user
+            createUser("Admin", "Admin", adminEmail, adminPassword);
+            System.out.println("Admin user created successfully.");
+        } else {
+            System.out.println("Admin account available.");
+        }
+    }
+
+
     public synchronized void createUser(String name, String NEstudante, String email, String password) {
         user tmp = new user(name, NEstudante, email, password);
         users.add(tmp);

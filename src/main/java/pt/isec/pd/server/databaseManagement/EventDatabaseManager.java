@@ -24,12 +24,13 @@ public class EventDatabaseManager {
 
     private void createTable() {
         String createTableQuery = "CREATE TABLE IF NOT EXISTS events ("
+                + "id INTEGER PRIMARY KEY AUTOINCREMENT, "
                 + "name TEXT, "
                 + "local TEXT, "
                 + "date TEXT, "
                 + "start TEXT, "
                 + "end TEXT, "
-                + "code INTEGER PRIMARY KEY, "
+                + "code INTEGER, "
                 + "codeValidity TEXT)";
         try (PreparedStatement statement = connection.prepareStatement(createTableQuery)) {
             statement.executeUpdate();
@@ -38,66 +39,15 @@ public class EventDatabaseManager {
         }
     }
 
-    public void saveEvent(event e) {
-        String insertQuery = "INSERT INTO events (name, local, date, start, end, code, codeValidity) VALUES (?, ?, ?, ?, ?, ?, ?)";
-        try (PreparedStatement statement = connection.prepareStatement(insertQuery)) {
-            statement.setString(1, e.getName());
-            statement.setString(2, e.getLocal());
-            statement.setString(3, e.getFormatDate(e.getDate()));
-            statement.setString(4, e.getFormatTime(e.getStart()));
-            statement.setString(5, e.getFormatTime(e.getEnd()));
-            statement.setInt(6, e.getCode());
-            statement.setString(7, e.getFormatTime(e.getCodeValidity()));
-            statement.executeUpdate();
-        } catch (SQLException ex) {
-            ex.printStackTrace();
-        }
-    }
-
-    public List<event> loadEvents() {
-        List<event> eventList = new ArrayList<>();
-        String selectQuery = "SELECT * FROM events";
-        try (Statement statement = connection.createStatement();
-             ResultSet resultSet = statement.executeQuery(selectQuery)) {
-
-            while (resultSet.next()) {
-                String name = resultSet.getString("name");
-                String local = resultSet.getString("local");
-                Calendar date = parseDate(resultSet.getString("date"));
-                Calendar start = parseTime(resultSet.getString("start"));
-                Calendar end = parseTime(resultSet.getString("end"));
-                int code = resultSet.getInt("code");
-                Calendar codeValidity = parseTime(resultSet.getString("codeValidity"));
-
-                event e = new event(name, local, date, start, end);
-                e.setCode(code);
-                e.setCodeValidity(codeValidity);
-                eventList.add(e);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return eventList;
-    }
-
-    public void deleteEvent(int code) {
-        String deleteQuery = "DELETE FROM events WHERE code=?";
-        try (PreparedStatement statement = connection.prepareStatement(deleteQuery)) {
-            statement.setInt(1, code);
-            statement.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void close() {
+    private Calendar parseCalendar(String dateString) {
+        Calendar calendar = Calendar.getInstance();
         try {
-            if (connection != null && !connection.isClosed()) {
-                connection.close();
-            }
-        } catch (SQLException e) {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm");
+            calendar.setTime(dateFormat.parse(dateString));
+        } catch (ParseException e) {
             e.printStackTrace();
         }
+        return calendar;
     }
 
 
@@ -123,20 +73,103 @@ public class EventDatabaseManager {
         return calendar;
     }
 
-    /*
-
-    //Recebe um Calender date, e retorna uma String no formato dd/mm/yyyy dessa date
-    public String getFormatDate(Calendar calendar) {
-        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
-        return dateFormat.format(calendar.getTime());
-    }
-    //Recebe um Calender date, e retorna uma String no formato hh:mm dessa date
-    public String getFormatTime(Calendar calendar) {
-        SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm");
-        return timeFormat.format(calendar.getTime());
+    public void deleteEvent(int eventId) {
+        String deleteQuery = "DELETE FROM events WHERE id=?";
+        try (PreparedStatement statement = connection.prepareStatement(deleteQuery)) {
+            statement.setInt(1, eventId);
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
-    */
+    public List<event> loadEvents() {
+        List<event> eventList = new ArrayList<>();
+        String selectQuery = "SELECT * FROM events";
+        try (Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery(selectQuery)) {
 
+            while (resultSet.next()) {
+                int id = resultSet.getInt("id");
+                String name = resultSet.getString("name");
+                String local = resultSet.getString("local");
+                Calendar date = parseDate(resultSet.getString("date"));
+                Calendar start = parseTime(resultSet.getString("start"));
+                Calendar end = parseTime(resultSet.getString("end"));
+                int code = resultSet.getInt("code");
+                Calendar codeValidity = parseTime(resultSet.getString("codeValidity"));
 
+                event e = new event(name, local, date, start, end);
+                e.setId(id);
+                e.setCode(code);
+                e.setCodeValidity(codeValidity);
+                eventList.add(e);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return eventList;
+    }
+
+    public void saveEvent(event e) {
+        String insertQuery = "INSERT INTO events (name, local, date, start, end, code, codeValidity) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        try (PreparedStatement statement = connection.prepareStatement(insertQuery)) {
+            statement.setString(1, e.getName());
+            statement.setString(2, e.getLocal());
+            statement.setString(3, e.getFormatDate(e.getDate()) + " " + e.getFormatTime(e.getDate()));
+            statement.setString(4, e.getFormatTime(e.getStart()));
+            statement.setString(5, e.getFormatTime(e.getEnd()));
+            statement.setInt(6, e.getCode());
+            statement.setString(7, e.getFormatTime(e.getCodeValidity()));
+            statement.executeUpdate();
+
+            // Fetch the maximum ID from the table
+            int lastInsertedId = getLastInsertedId();
+            e.setId(lastInsertedId); // Set the id in the event object
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    private int getLastInsertedId() throws SQLException {
+        String maxIdQuery = "SELECT MAX(id) FROM events";
+        try (Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery(maxIdQuery)) {
+            if (resultSet.next()) {
+                return resultSet.getInt(1);
+            }
+        }
+        return -1; // Return a default value if no ID is found
+    }
+
+    public void updateEvent(event e) {
+        String updateQuery = "UPDATE events SET name=?, local=?, date=?, start=?, end=? WHERE id=?";
+        try (PreparedStatement statement = connection.prepareStatement(updateQuery)) {
+            statement.setString(1, e.getName());
+            statement.setString(2, e.getLocal());
+            statement.setString(3, e.getFormatDate(e.getDate()) + " " + e.getFormatTime(e.getDate()));
+            statement.setString(4, e.getFormatTime(e.getStart()));
+            statement.setString(5, e.getFormatTime(e.getEnd()));
+            statement.setInt(6, e.getId());  // Assuming id is the primary key
+
+            int rowsUpdated = statement.executeUpdate();
+            if (rowsUpdated > 0) {
+                System.out.println("Event updated successfully.");
+            } else {
+                System.out.println("Event not found or not updated.");
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    public void close() {
+        try {
+            if (connection != null && !connection.isClosed()) {
+                connection.close();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 }

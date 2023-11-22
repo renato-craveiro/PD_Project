@@ -61,15 +61,43 @@ public class eventManagement {
         //events.add(new event(name, local, date, start, end));
     }
 
-    public void removeEvent(int code) {
+    /*public void removeEvent(int code) {
+
         events.removeIf(e -> e.getCode() == code);
         dbManager.deleteEvent(code);
+    }*/
+
+    public boolean removeEvent(int id) {
+        if(events.removeIf(e -> e.getId() == id)){
+            dbManager.deleteEvent(id);
+            return true;
+        }else
+            return false;
+        //dbManager.deleteEvent(id);
     }
 
     public event getEventByCode(String otherParam) {
         return events.stream().filter((event event) -> event.getCode() == Integer.parseInt(otherParam)).findFirst().get();
     }
 
+    public event getEventById(int id) {
+        return events.stream().filter((event event) -> event.getId() == id).findFirst().get();
+    }
+
+    public void updateEventDB(int id){
+        dbManager.updateEvent(getEventById(id));
+    }
+
+    public void checkEventsValidity(){
+        Calendar now = Calendar.getInstance();
+        //System.out.println("Now = " + now.getTime());
+        events.stream().filter((event e) -> e.getCodeValidity().before(now)).forEach((event ev) -> {
+            System.out.println("Event " + ev + " is no longer valid.");
+            ev.generateRandomCode();
+            updateEventDB(ev.getId());
+            System.out.println("Event updated successfully. Data: " + ev);
+        });
+    }
 
     /*public void exportToCSV() {
         File report = new File("events.csv");

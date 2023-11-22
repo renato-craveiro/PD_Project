@@ -3,7 +3,10 @@ package pt.isec.pd.server.databaseManagement;
 import pt.isec.pd.types.user;
 
 import java.sql.*;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 
 public class UserDatabaseManager {
@@ -21,9 +24,10 @@ public class UserDatabaseManager {
 
     private void createTable() {
         String createTableQuery = "CREATE TABLE IF NOT EXISTS users ("
+                + "id INTEGER PRIMARY KEY AUTOINCREMENT, "
                 + "name TEXT, "
                 + "NEstudante TEXT, "
-                + "email TEXT PRIMARY KEY, "
+                + "email TEXT UNIQUE, "
                 + "password TEXT, "
                 + "logged BOOLEAN)";
         try (PreparedStatement statement = connection.prepareStatement(createTableQuery)) {
@@ -31,6 +35,42 @@ public class UserDatabaseManager {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    /*private Calendar parseDate(String dateString) {
+        Calendar calendar = Calendar.getInstance();
+        try {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+            calendar.setTime(dateFormat.parse(dateString));
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        return calendar;
+    }*/
+
+    public List<user> loadUsers() {
+        List<user> userList = new ArrayList<>();
+        String selectQuery = "SELECT * FROM users";
+        try (Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery(selectQuery)) {
+
+            while (resultSet.next()) {
+                int id = resultSet.getInt("id");
+                String name = resultSet.getString("name");
+                String NEstudante = resultSet.getString("NEstudante");
+                String email = resultSet.getString("email");
+                String password = resultSet.getString("password");
+                boolean logged = resultSet.getBoolean("logged");
+
+                user u = new user(name, NEstudante, email, password);
+                u.setId(id);
+                u.setLogged(logged);
+                userList.add(u);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return userList;
     }
 
     public void saveUser(user u) {
@@ -42,33 +82,37 @@ public class UserDatabaseManager {
             statement.setString(4, u.getPassword());
             statement.setBoolean(5, u.isLogged());
             statement.executeUpdate();
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    public void deleteUser(String email) {
+        String deleteQuery = "DELETE FROM users WHERE email=?";
+        try (PreparedStatement statement = connection.prepareStatement(deleteQuery)) {
+            statement.setString(1, email);
+            statement.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
 
-    public List<user> loadUsers() {
-        List<user> userList = new ArrayList<>();
-        String selectQuery = "SELECT * FROM users";
-        try (Statement statement = connection.createStatement();
-             ResultSet resultSet = statement.executeQuery(selectQuery)) {
 
-            while (resultSet.next()) {
-                String name = resultSet.getString("name");
-                String NEstudante = resultSet.getString("NEstudante");
-                String email = resultSet.getString("email");
-                String password = resultSet.getString("password");
-                boolean logged = resultSet.getBoolean("logged");
 
-                user u = new user(name, NEstudante, email, password);
-                u.setLogged(logged);
-                userList.add(u);
+    public boolean userExists(String email) {
+        String selectQuery = "SELECT * FROM users WHERE email=?";
+        try (PreparedStatement statement = connection.prepareStatement(selectQuery)) {
+            statement.setString(1, email);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next();
             }
         } catch (SQLException e) {
             e.printStackTrace();
+            return false;
         }
-        return userList;
     }
+
+
 
     public void close() {
         try {

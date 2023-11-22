@@ -2,6 +2,7 @@ package pt.isec.pd.types;
 
 
 import java.io.Serializable;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  *
@@ -12,6 +13,17 @@ import java.io.Serializable;
  *
  */
 public class user implements Serializable {
+    private static final AtomicInteger count = new AtomicInteger(0);
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    int id;
     String name;
     String NEstudante;
     String email;
@@ -20,6 +32,7 @@ public class user implements Serializable {
     boolean logged = false;
 
     public user(String name, String NEstudante, String email, String password) {
+        this.id = count.incrementAndGet();
         this.name = name;
         this.NEstudante = NEstudante;
         this.email = email;
