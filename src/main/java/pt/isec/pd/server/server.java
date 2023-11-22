@@ -678,29 +678,37 @@ public class server {
 
 
     public static void main(String args[]) {
-        userManagment userManager = new userManagment(new UserDatabaseManager(SQLITEDB));
-        //RelationshipManager relManager = new RelationshipManager(SQLITEDB);
-        int nCreatedThreads = 0;
-        userManager.createAdminIfNotExists();
-        eventManagement eventManager = new eventManagement(new EventDatabaseManager(SQLITEDB));
-        //String request;
-        request req;
-        Thread thr;
+        String DB_PATH = SQLITEDB;
+        if(args.length != 2 /*DEVE SER 3 POR CAUSA DO RMI*/){
+            System.out.println("Sintaxe: java pt.isec.pd.server porto caminho_baseDados ");
+            return;
+        }
+        DB_PATH = args[1];
+        int port = Integer.parseInt(args[0]);
 
-        //eventManager.checkEventsValidity();
+
+        try (ServerSocket socket = new ServerSocket(/*Integer.parseInt(args[0])) //5000)*/port)) {
+            userManagment userManager = new userManagment(new UserDatabaseManager(DB_PATH));
+            //RelationshipManager relManager = new RelationshipManager(SQLITEDB);
+            int nCreatedThreads = 0;
+            userManager.createAdminIfNotExists();
+            eventManagement eventManager = new eventManagement(new EventDatabaseManager(DB_PATH));
+            //String request;
+            request req;
+            Thread thr;
+
+            //eventManager.checkEventsValidity();
 
         /*if (args.length != 1) {
             System.out.println("Sintaxe: java TcpSerializedTimeServerIncomplete listeningPort");
             return;
         }*/
 
-        Thread eventValidityChecker = new Thread(new EventValidityChecker(eventManager));
-        eventValidityChecker.start();
+            Thread eventValidityChecker = new Thread(new EventValidityChecker(eventManager));
+            eventValidityChecker.start();
 
-        Thread kb = new Thread(new KBMgmt(false, eventManager, userManager));
-        kb.start();
-        try (ServerSocket socket = new ServerSocket(/*Integer.parseInt(args[0]))*/5000)) {
-
+            Thread kb = new Thread(new KBMgmt(false, eventManager, userManager));
+            kb.start();
             System.out.println("Servidor iniciado no porto " + socket.getLocalPort() + " ...");
             while (true) {
                 Socket toClientSocket = socket.accept();
