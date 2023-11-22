@@ -27,36 +27,6 @@ public class eventManagement {
     }
 
 
-    /*public void setEvents(ArrayList<event> events) {
-        this.events = events;
-    }*/
-
-
-
-
-
-
-    //-----------------------CSV???-----------------------
-
-    /*//https://www.baeldung.com/java-csv
-    public String escapeSpecialCharacters(String data) {
-        String escapedData = data.replaceAll("\\R", " ");
-        if (data.contains(",") || data.contains("\"") || data.contains("'")) {
-            data = data.replace("\"", "\"\"");
-            escapedData = "\"" + data + "\"";
-        }
-        return escapedData;
-    }
-
-    public String convertToCSV(String[] data) {
-        return Stream.of(data)
-                .map(this::escapeSpecialCharacters)
-                .collect(Collectors.joining(","));
-    }
-
-    //https://www.baeldung.com/java-csv end*/
-
-
     public void editEvent(int id, event newEvent){
         Optional<event> eventToUpdate = events.stream().filter(e -> e.getId() == id).findFirst();
 
@@ -84,15 +54,8 @@ public class eventManagement {
         event newEvent = new event(name, local, date, start, end);
         events.add(newEvent);
         dbManager.saveEvent(newEvent);
-
-        //events.add(new event(name, local, date, start, end));
     }
 
-    /*public void removeEvent(int code) {
-
-        events.removeIf(e -> e.getCode() == code);
-        dbManager.deleteEvent(code);
-    }*/
 
     public boolean removeEvent(int id) {
         if(events.removeIf(e -> e.getId() == id)){
@@ -100,7 +63,6 @@ public class eventManagement {
             return true;
         }else
             return false;
-        //dbManager.deleteEvent(id);
     }
 
     public event getEventByCode(String otherParam) {
@@ -121,7 +83,7 @@ public class eventManagement {
 
     public void checkEventsValidity(){
         Calendar now = Calendar.getInstance();
-        //System.out.println("Now = " + now.getTime());
+
         events.stream().filter((event e) -> e.getCodeValidity().before(now)).forEach((event ev) -> {
             System.out.println("Event " + ev + " is no longer valid.");
             ev.generateRandomCode();
@@ -131,15 +93,7 @@ public class eventManagement {
     }
 
     /*public void exportToCSV() {
-        File report = new File("events.csv");
-        try (PrintWriter pw = new PrintWriter(report)) {
-            events.stream()
-                    .map((event data) -> convertToCSV(data))
-                    .forEach(pw::println);
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException(e);
-        }
-        assertTrue(csvOutputFile.exists());
+
     }*/
 
 

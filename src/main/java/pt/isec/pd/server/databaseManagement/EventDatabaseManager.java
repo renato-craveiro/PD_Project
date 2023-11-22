@@ -172,14 +172,14 @@ public class EventDatabaseManager {
                 System.out.println("Event not found or not updated.");
             }
 
-            //System.out.println("Updating users present in event " + e.getId());
+
 
             List<user> existingUsers = relationshipManager.getUsersByEvent(e);
-            //System.out.println("Existing users on db: " + existingUsers);
+
             boolean containUser=false;
 
             for (user u : e.getUsersPresent()) {
-                //System.out.println("User " + u + " is present in event " + e.getId());
+
 
                 for (user user : existingUsers) {
                     if (user.getId() == u.getId()) {

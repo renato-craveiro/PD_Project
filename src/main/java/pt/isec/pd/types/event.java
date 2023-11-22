@@ -6,19 +6,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * Criação de um evento, sendo este caracterizado pelo nome, local, data de realização,
- * hora de início e hora de fim;
- * ▪ Edição dos dados de um evento. O período de realização apenas pode ser alterado se
- * não possuir qualquer presença registada;
- * ▪ Eliminação de um evento, desde que ainda não tenha qualquer presença registada;
- * ▪ Consulta dos eventos criados, podendo ser aplicados diversos tipos de critérios/filtros
- * (período, nome do evento, etc.);
- * ▪ Geração de um código para registo de presenças em um evento que esteja a decorrer
- * no momento, com indicação do tempo de validade em minutos. Podem ser gerados
- * códigos sucessivos para o mesmo evento, prevalecendo o mais recente (os anteriores
- * deixam de ser válidos);
- */
+
 public class event {
     public int getId() {
         return id;
@@ -28,16 +16,12 @@ public class event {
         this.id = id;
     }
 
-    //private static int eventID = 0;
     int id;
     private static final AtomicInteger count = new AtomicInteger(0);
     public ArrayList<user> getUsersPresent() {
         return usersPresent;
     }
 
-    public void setUsersPresent(ArrayList<user> usersPresent) {
-        this.usersPresent = usersPresent;
-    }
 
     ArrayList<user> usersPresent = new ArrayList<>();
     String name;
@@ -144,12 +128,12 @@ public class event {
     @Override
     public String toString() {
         return "event{ "+"id="+id + " name=" + name + ", local=" + local +", date=" + getFormatDate(date) + ", start=" + getFormatTime(start) + ", end=" + getFormatTime(end) + " code=" + code + " codeValidity=" + getFormatTime(codeValidity) +'}';
-        //return "event{ "+"id="+eventID + "name=" + name + ", local=" + local + ", date=" + date + ", start=" + start + ", end=" + end + " code=" + code + " codeValidity=" + codeValidity.toString() +'}';
+
     }
 
     public String toClientString() {
         return name + ";" + local + ";" + getFormatDate(date) + ";" + getFormatTime(start);
-        //return name + ";" + local + ";" + date.get(Calendar.DAY_OF_MONTH)+"/"+date.get(Calendar.MONTH)+"/"+date.get(Calendar.YEAR) + ";" + start.get(Calendar.HOUR_OF_DAY)+":"+start.get(Calendar.MINUTE);
+
     }
     public void addPresence(user u){
         usersPresent.add(u);
@@ -158,7 +142,7 @@ public class event {
     public void removePresence(user u){
 
         usersPresent.removeIf(user -> user.getEmail().equals(u.getEmail()));
-        /*usersPresent.remove(u);*/
+
     }
 
     public boolean checkPresenceEmail(String email){

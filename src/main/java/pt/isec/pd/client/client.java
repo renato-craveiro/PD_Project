@@ -8,11 +8,10 @@ import java.io.ObjectOutputStream;
 import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.util.Calendar;
 import java.util.Objects;
 import java.util.Scanner;
 
-import static java.lang.System.exit;
+
 
 
 public class client {
@@ -31,7 +30,6 @@ public class client {
             ObjectOutputStream oout = new ObjectOutputStream(socket.getOutputStream())){
 
             socket.setSoTimeout(TIMEOUT*1000);
-            //currUser = new user("teste", "teste", "teste","teste");
             if(reqStr == null){
                 return("Pedido nulo!");
             }
@@ -93,7 +91,7 @@ public class client {
         System.out.println("Password:");
         String password = sc.nextLine();
         auxUser = new user(name, NEstudante, email, password);
-        //currUser = new user(name, NEstudante, email, password);
+
         System.out.println("[Servidor]: "+sendRequest("CHANGE"));
     }
 
@@ -115,7 +113,6 @@ public class client {
             System.out.println("[Servidor]: "+rsp);
         }
 
-        //System.out.println("[Servidor]: "+sendRequest("LOGIN"));
     }
 
     public static boolean appMenu(){
@@ -130,10 +127,9 @@ public class client {
         int op = sc.nextInt();
         switch (op){
             case 1:
-                //listMyEvents();
+
                 System.out.println(sendRequest("LIST"));
                 return true;
-                //break;
             case 2:
                 subscribeEvent();
                 return true;
@@ -151,9 +147,9 @@ public class client {
             default:
                 System.out.println("Opção inválida");
                 return true;
-                //break;
+
         }
-        //return false;
+
     }
 
     private static void subscribeEvent() {

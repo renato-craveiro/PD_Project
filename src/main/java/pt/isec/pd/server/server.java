@@ -1,7 +1,6 @@
 package pt.isec.pd.server;
 
 import pt.isec.pd.server.databaseManagement.EventDatabaseManager;
-import pt.isec.pd.server.databaseManagement.RelationshipManager;
 import pt.isec.pd.server.databaseManagement.UserDatabaseManager;
 import pt.isec.pd.types.event;
 import pt.isec.pd.types.user;
@@ -17,22 +16,6 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.ResultSet;
-import java.sql.Statement;
-
-/*class jdbcManager{
-    //BASE DE DADOS ACESSOS ASYNC E ESSAS CENAS!!!! EM SQLITE
-
-    private static Connection conn;
-    private static Statement stmt;
-    private static ResultSet rs;
-    private static String sql;
-    private static String url = "jdbc:sqlite:database.db";
-
-}*/
 
 
 class EventValidityChecker implements Runnable{
@@ -46,11 +29,6 @@ class EventValidityChecker implements Runnable{
     public void run() {
         while(true){
             eventManager.checkEventsValidity();
-            /*try {
-                Thread.sleep(60000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }*/
         }
     }
 }
@@ -69,9 +47,8 @@ class managerCLients implements Runnable {
 
     @Override
     public void run(){
-        int myID;
+
         request req;
-        //System.out.println("NA THREAD");
             try (
                     ObjectOutputStream oout = new ObjectOutputStream(toClientSocket.getOutputStream());
                     ObjectInputStream oin = new ObjectInputStream(toClientSocket.getInputStream())) {
@@ -135,10 +112,8 @@ class managerCLients implements Runnable {
                                 oout.writeObject(response);
                                 oout.flush();
                             }
-                            //login(req, oout);
                             break;
-                        case "LOGOUT":
-                            //logout(req, oout);
+                        case "LOGOUT", "QUIT":
                             break;
                         case "LIST":
                             StringBuilder sb = new StringBuilder();
@@ -156,13 +131,12 @@ class managerCLients implements Runnable {
                                 oout.flush();
                             }else {
                                 String header = "Descricao;Local;Data;HoraInicio\n";
-                                String response = header+sb.toString()+"\n";
+                                String response = header+sb+"\n";
 
                                 oout.writeObject(response);
                                 oout.flush();
                             }
 
-                            //list(req, oout);
                             break;
                         case "SEND":
                             //INSCREVER EM EVENTO
@@ -187,7 +161,6 @@ class managerCLients implements Runnable {
                                     }
                                     ev.addPresence(userManager.getUser(req.user.getEmail()));
                                     eventManager.editEvent(ev.getId(), ev);
-                                    //eventManager.updateEventDB(ev.getId());
                                     String response = "Inscrito ao Evento "+ev.getName()+"!";
                                     System.out.println("SUBSCRITO!");
                                     oout.writeObject(response);
@@ -200,19 +173,8 @@ class managerCLients implements Runnable {
                                     oout.flush();
                                     break;
                                 }
-
-                                /*if(ev == null){
-                                    String response = "Event not found";
-
-                                    oout.writeObject(response);
-                                    oout.flush();
-                                    System.out.println("EVENTO NAO ENCONTRADO!");
-                                    break;
-                                }*/
-
                             }
 
-                            //send(req, oout);
                             break;
                         case "CHANGE":
                             if(userManager.checkUser(req.user)){
@@ -232,13 +194,8 @@ class managerCLients implements Runnable {
                                 oout.flush();
                             }
                             break;
-                            //receive(req, oout);
-                        case "QUIT":
-                            //quit(req, oout);
-                            break;
                     }
 
-                    // do something
                 }
 
 
@@ -256,7 +213,7 @@ class managerCLients implements Runnable {
 
 
 class KBMgmt implements Runnable{
-    boolean adminLogged = false;
+    boolean adminLogged;
     eventManagement eventManager;
     userManagment userManager;
 
@@ -270,8 +227,7 @@ class KBMgmt implements Runnable{
     private void createEvent() {
 
         boolean sucsess = false;
-        int day, mth, yr;
-        int startHr, startMn, endHr, endMn;
+
         Date dateTime = null, startHourTime = null, endHourTime = null;
         Scanner sc = new Scanner(System.in);
         SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
@@ -414,8 +370,8 @@ class KBMgmt implements Runnable{
         System.out.println("1-Data\n2-Nome\n3-Local\n4-Periodo\n");
         Scanner sc = new Scanner(System.in);
         String buffer = sc.nextLine();
-        switch (buffer){
-            case "1":
+        switch (buffer) {
+            case "1" -> {
                 System.out.println("Data do evento (dd/mm/aaaa):");
                 String date = sc.nextLine();
                 Calendar dateTime = Calendar.getInstance();
@@ -426,30 +382,30 @@ class KBMgmt implements Runnable{
                     System.out.println("Formato de data/hora inválido. Usa dd/mm/aaaa.");
                 }
                 for (event e : eventManager.getEvents()) {
-                    if(e.getDate().equals(dateTime)){
+                    if (e.getDate().equals(dateTime)) {
                         System.out.println(e.toString());
                     }
                 }
-                break;
-            case "2":
+            }
+            case "2" -> {
                 System.out.println("Nome do evento:");
                 String name = sc.nextLine();
                 for (event e : eventManager.getEvents()) {
-                    if(e.getName().equals(name)){
+                    if (e.getName().equals(name)) {
                         System.out.println(e.toString());
                     }
                 }
-                break;
-            case "3":
+            }
+            case "3" -> {
                 System.out.println("Local do evento:");
                 String local = sc.nextLine();
                 for (event e : eventManager.getEvents()) {
-                    if(e.getLocal().equals(local)){
+                    if (e.getLocal().equals(local)) {
                         System.out.println(e.toString());
                     }
                 }
-                break;
-            case "4":
+            }
+            case "4" -> {
                 System.out.println("Data de inicio do periodo (dd/mm/aaaa):");
                 String date1 = sc.nextLine();
                 Calendar dateTime1 = Calendar.getInstance();
@@ -471,14 +427,12 @@ class KBMgmt implements Runnable{
                     break;
                 }
                 for (event e : eventManager.getEvents()) {
-                    if(e.getDate().after(dateTime1) && e.getDate().before(dateTime2)){
+                    if (e.getDate().after(dateTime1) && e.getDate().before(dateTime2)) {
                         System.out.println(e.toString());
                     }
                 }
-                break;
-            default:
-                System.out.println("Opção inválida");
-                break;
+            }
+            default -> System.out.println("Opção inválida");
         }
 
     }
@@ -513,7 +467,6 @@ class KBMgmt implements Runnable{
             switch (buffer){
                 case "1":
                     if(!userManager.checkUser("admin")){
-                        //userManager.createUser(new user("admin","admin","admin","admin"));
                         System.out.println("Admin nao existe... Crie um admin primeiro!");
                         break;
                     }
@@ -571,7 +524,6 @@ class KBMgmt implements Runnable{
                             System.out.println("ID do evento:");
                             String strID2 = sc.nextLine();
                             int id2 = Integer.parseInt(strID2);
-                            //eventManager.getEventByCode(strID2).generateRandomCode();
                             System.out.println("Insira a validade do codigo (em minutos):");
                             String strVal = sc.nextLine();
                             int time = Integer.parseInt(strVal);
@@ -590,7 +542,6 @@ class KBMgmt implements Runnable{
                             for (user u : eventManager.getEventById(id3).getUsersPresent()) {
                                 System.out.println(u.toString());
                             }
-                            //System.out.println(eventManager.getEventById(id3).getUsersPresent().toString());
                             break;
                         }
                     case "71":
@@ -670,9 +621,6 @@ class KBMgmt implements Runnable{
 
 
 public class server {
-    public static final String DB_USER ="users";
-
-    public static final String DB_EVENT ="events";
 
     public static final String SQLITEDB ="presences";
 
@@ -689,20 +637,14 @@ public class server {
 
         try (ServerSocket socket = new ServerSocket(/*Integer.parseInt(args[0])) //5000)*/port)) {
             userManagment userManager = new userManagment(new UserDatabaseManager(DB_PATH));
-            //RelationshipManager relManager = new RelationshipManager(SQLITEDB);
+
             int nCreatedThreads = 0;
             userManager.createAdminIfNotExists();
             eventManagement eventManager = new eventManagement(new EventDatabaseManager(DB_PATH));
-            //String request;
-            request req;
+
             Thread thr;
 
-            //eventManager.checkEventsValidity();
 
-        /*if (args.length != 1) {
-            System.out.println("Sintaxe: java TcpSerializedTimeServerIncomplete listeningPort");
-            return;
-        }*/
 
             Thread eventValidityChecker = new Thread(new EventValidityChecker(eventManager));
             eventValidityChecker.start();

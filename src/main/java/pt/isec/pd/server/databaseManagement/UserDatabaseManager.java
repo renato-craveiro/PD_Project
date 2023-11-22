@@ -37,16 +37,7 @@ public class UserDatabaseManager {
         }
     }
 
-    /*private Calendar parseDate(String dateString) {
-        Calendar calendar = Calendar.getInstance();
-        try {
-            SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
-            calendar.setTime(dateFormat.parse(dateString));
-        } catch (ParseException e) {
-            e.printStackTrace();
-        }
-        return calendar;
-    }*/
+
 
     public List<user> loadUsers() {
         List<user> userList = new ArrayList<>();
