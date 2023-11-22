@@ -1,6 +1,7 @@
 package pt.isec.pd.server.databaseManagement;
 
 import pt.isec.pd.types.event;
+import pt.isec.pd.types.user;
 
 import java.sql.*;
 import java.text.ParseException;
@@ -11,12 +12,13 @@ import java.util.List;
 
 public class EventDatabaseManager {
     private Connection connection;
-
+    private RelationshipManager relationshipManager;
     public EventDatabaseManager(String dbName) {
         try {
             Class.forName("org.sqlite.JDBC");
             connection = DriverManager.getConnection("jdbc:sqlite:" + dbName + ".db");
             createTable();
+            relationshipManager = new RelationshipManager(dbName);
         } catch (ClassNotFoundException | SQLException e) {
             e.printStackTrace();
         }
@@ -103,12 +105,19 @@ public class EventDatabaseManager {
                 e.setId(id);
                 e.setCode(code);
                 e.setCodeValidity(codeValidity);
+
+                List<user> users = relationshipManager.getUsersByEvent(e);
+                e.getUsersPresent().addAll(users);
+
                 eventList.add(e);
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
         return eventList;
+    }
+    public void removeUserFromEventRelationship(user user, event event) {
+        relationshipManager.removeUserFromEventRelationship(user, event);
     }
 
     public void saveEvent(event e) {
@@ -126,6 +135,10 @@ public class EventDatabaseManager {
             // Fetch the maximum ID from the table
             int lastInsertedId = getLastInsertedId();
             e.setId(lastInsertedId); // Set the id in the event object
+
+            for (user u : e.getUsersPresent()) {
+                relationshipManager.addUserToEventRelationship(u, e);
+            }
         } catch (SQLException ex) {
             ex.printStackTrace();
         }
@@ -158,13 +171,53 @@ public class EventDatabaseManager {
             } else {
                 System.out.println("Event not found or not updated.");
             }
+
+            //System.out.println("Updating users present in event " + e.getId());
+
+            List<user> existingUsers = relationshipManager.getUsersByEvent(e);
+            //System.out.println("Existing users on db: " + existingUsers);
+            boolean containUser=false;
+
+            for (user u : e.getUsersPresent()) {
+                //System.out.println("User " + u + " is present in event " + e.getId());
+
+                for (user user : existingUsers) {
+                    if (user.getId() == u.getId()) {
+                        containUser=true;
+                        break;
+                    }
+                }
+                if(!containUser)
+                    relationshipManager.addUserToEventRelationship(u, e);
+                containUser=false;
+
+            }
+            containUser=false;
+            for (user u : existingUsers) {
+
+                for (user user : e.getUsersPresent()) {
+                    if (user.getId() == u.getId()) {
+                        containUser=true;
+                        break;
+                    }
+                }
+
+                if (!containUser) {
+                    relationshipManager.removeUserFromEventRelationship(u, e);
+                }
+            }
+
         } catch (SQLException ex) {
+            System.out.println("EVENTDATABASEMANAGER: " + ex.getMessage());
             ex.printStackTrace();
         }
     }
 
     public void close() {
         try {
+            if (relationshipManager != null) {
+                relationshipManager.close();
+            }
             if (connection != null && !connection.isClosed()) {
                 connection.close();
             }

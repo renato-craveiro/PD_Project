@@ -1,6 +1,7 @@
 package pt.isec.pd.server;
 
 import pt.isec.pd.server.databaseManagement.EventDatabaseManager;
+import pt.isec.pd.server.databaseManagement.RelationshipManager;
 import pt.isec.pd.server.databaseManagement.UserDatabaseManager;
 import pt.isec.pd.types.event;
 import pt.isec.pd.types.user;
@@ -184,7 +185,7 @@ class managerCLients implements Runnable {
                                         System.out.println("JA SUBSCRITO!");
                                         break;
                                     }
-                                    ev.addPresence(req.user);
+                                    ev.addPresence(userManager.getUser(req.user.getEmail()));
                                     eventManager.editEvent(ev.getId(), ev);
                                     //eventManager.updateEventDB(ev.getId());
                                     String response = "Inscrito ao Evento "+ev.getName()+"!";
@@ -615,6 +616,7 @@ class KBMgmt implements Runnable{
                             System.out.println("Email do utilizador:");
                             String email2 = sc.nextLine();
                             eventManager.getEventById(id4).removePresence(userManager.getUser(email2));
+                            eventManager.removeUserEvent(userManager.getUser(email2),eventManager.getEventById(id4));
                             eventManager.updateEventDB(id4);
                             break;
                         }
@@ -677,6 +679,7 @@ public class server {
 
     public static void main(String args[]) {
         userManagment userManager = new userManagment(new UserDatabaseManager(SQLITEDB));
+        //RelationshipManager relManager = new RelationshipManager(SQLITEDB);
         int nCreatedThreads = 0;
         userManager.createAdminIfNotExists();
         eventManagement eventManager = new eventManagement(new EventDatabaseManager(SQLITEDB));

@@ -2,11 +2,13 @@ package pt.isec.pd.server;
 
 import pt.isec.pd.server.databaseManagement.EventDatabaseManager;
 import pt.isec.pd.types.event;
+import pt.isec.pd.types.user;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.util.Calendar;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.*;
 import java.util.ArrayList;
@@ -28,6 +30,8 @@ public class eventManagement {
     /*public void setEvents(ArrayList<event> events) {
         this.events = events;
     }*/
+
+
 
 
 
@@ -65,6 +69,7 @@ public class eventManagement {
             existingEvent.setStart(newEvent.getStart());
             existingEvent.setEnd(newEvent.getEnd());
 
+            System.out.println("DEBUG!\nUSERS TO ADD: " + newEvent.getUsersPresent());
 
             // Update the event in the database
             dbManager.updateEvent(existingEvent);
@@ -110,6 +115,10 @@ public class eventManagement {
         dbManager.updateEvent(getEventById(id));
     }
 
+    public void removeUserEvent(user u,event e){
+        dbManager.removeUserFromEventRelationship(u,e);
+    }
+
     public void checkEventsValidity(){
         Calendar now = Calendar.getInstance();
         //System.out.println("Now = " + now.getTime());
@@ -117,7 +126,7 @@ public class eventManagement {
             System.out.println("Event " + ev + " is no longer valid.");
             ev.generateRandomCode();
             updateEventDB(ev.getId());
-            System.out.println("Event updated successfully. Data: " + ev);
+            System.out.println("New Data: " + ev);
         });
     }
 

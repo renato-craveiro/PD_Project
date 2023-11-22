@@ -77,7 +77,7 @@ public class user implements Serializable {
 
     @Override
     public String toString() {
-        return "user{" + "name=" + name + ", NEstudante=" + NEstudante + ", email=" + email + ", password=" + password + '}';
+        return "user{"+"id="+id + "name=" + name + ", NEstudante=" + NEstudante + ", email=" + email + ", password=" + password + '}';
     }
 
     public boolean isLogged() {
