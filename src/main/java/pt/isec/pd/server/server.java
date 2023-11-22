@@ -87,7 +87,7 @@ class managerCLients implements Runnable {
                             && !req.req.equalsIgnoreCase("LOGOUT")
                             && !req.req.equalsIgnoreCase("LIST")
                             && !req.req.equalsIgnoreCase("SEND")
-                            && !req.req.equalsIgnoreCase("RECEIVE")
+                            && !req.req.equalsIgnoreCase("CHANGE")
                             && !req.req.equalsIgnoreCase("QUIT")) {
                         System.out.println("Unexpected request received from " +
                                 toClientSocket.getInetAddress().getHostAddress() + ":" +
@@ -185,6 +185,8 @@ class managerCLients implements Runnable {
                                         break;
                                     }
                                     ev.addPresence(req.user);
+                                    eventManager.editEvent(ev.getId(), ev);
+                                    //eventManager.updateEventDB(ev.getId());
                                     String response = "Inscrito ao Evento "+ev.getName()+"!";
                                     System.out.println("SUBSCRITO!");
                                     oout.writeObject(response);
@@ -211,9 +213,25 @@ class managerCLients implements Runnable {
 
                             //send(req, oout);
                             break;
-                        case "RECEIVE":
-                            //receive(req, oout);
+                        case "CHANGE":
+                            if(userManager.checkUser(req.user)){
+                                userManager.editUser(req.user.getEmail(),req.nUser);
+                                String response = "ALTERADO";
+
+                                oout.writeObject(response);
+                                oout.flush();
+                                System.out.println("USER "+userManager.getUser(req.user.getEmail()).getName()+" ALTERADO!");
+
+
+                            }else {
+                                userManager.createUser(req.user);
+                                String response = "Falha na verificação do user!";
+
+                                oout.writeObject(response);
+                                oout.flush();
+                            }
                             break;
+                            //receive(req, oout);
                         case "QUIT":
                             //quit(req, oout);
                             break;
@@ -264,34 +282,6 @@ class KBMgmt implements Runnable{
 
         System.out.println("Local do evento:");
         String local = sc.nextLine();
-
-
-        /*
-        day = Integer.parseInt(date.split("/")[0]);
-        mth = Integer.parseInt(date.split("/")[1]);
-        yr = Integer.parseInt(date.split("/")[2]);
-        System.out.println("Hora de inicio do evento (hh:mm):");
-        String start = sc.nextLine();
-        startHr = Integer.parseInt(start.split(":")[0]);
-        startMn = Integer.parseInt(start.split(":")[1]);
-        System.out.println("Hora de fim do evento (hh:mm):");
-        String end = sc.nextLine();
-        endHr = Integer.parseInt(end.split(":")[0]);
-        endMn = Integer.parseInt(end.split(":")[1]);
-
-        Calendar eventDate = Calendar.getInstance();
-        eventDate.set(yr,mth,day);
-        Calendar eventStart = Calendar.getInstance();
-        eventStart.set(Calendar.HOUR_OF_DAY,startHr);
-        eventStart.set(Calendar.MINUTE,startMn);
-        Calendar eventEnd = Calendar.getInstance();
-        eventEnd.set(Calendar.HOUR_OF_DAY,endHr);
-        eventEnd.set(Calendar.MINUTE,endMn);
-        eventManager.createEvent(name, local, eventDate, eventStart, eventEnd);
-        eventManager.getEvents().get(eventManager.getEvents().size()-1).generateRandomCode();
-        System.out.println("Codigo do evento: "+eventManager.getEvents().get(eventManager.getEvents().size()-1).getCode());
-        */
-
 
 
         while (!sucsess){
@@ -346,26 +336,177 @@ class KBMgmt implements Runnable{
         System.out.println("Codigo do evento: "+eventManager.getEvents().get(eventManager.getEvents().size()-1).getCode());
     }
 
+    public void editEvent(){
+        event newEv;
+        Scanner sc = new Scanner(System.in);
+        System.out.println("ID do evento:");
+        String strID1 = sc.nextLine();
+        int id1 = Integer.parseInt(strID1);
+        System.out.println("Dados atuais do evento: \n"+eventManager.getEventById(id1).toString());
+        System.out.println("Novo nome do evento:");
+        String name = sc.nextLine();
+        System.out.println("Novo local do evento:");
+        String local = sc.nextLine();
+        if(!eventManager.getEventById(id1).getUsersPresent().isEmpty()){
+            System.out.println("O evento ja tem presencas registadas. Não pode alterar a data do evento!");
+             newEv = new event(name, local,
+                    eventManager.getEventById(id1).getDate(),
+                    eventManager.getEventById(id1).getStart(),
+                    eventManager.getEventById(id1).getEnd());
+        }else {
+            boolean sucsess = false;
+            Date dateTime = null, startHourTime = null, endHourTime = null;
+            SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+            SimpleDateFormat hourFormat = new SimpleDateFormat("hh:mm");
+            while (!sucsess){
+
+                System.out.println("Data do evento (dd/mm/aaaa):");
+                String date = sc.nextLine();
+
+                try {
+                    dateTime = dateFormat.parse(date);
+                    sucsess = true;
+                } catch (ParseException e) {
+                    System.out.println("Formato de data/hora inválido. Usa dd/mm/aaaa.");
+                }
+
+            }
+            sucsess = false;
+            while (!sucsess){
+                System.out.println("Hora de inicio do evento (hh:mm):");
+                String start = sc.nextLine();
+                try {
+                    startHourTime = hourFormat.parse(start);
+                    sucsess = true;
+                } catch (ParseException e) {
+                    System.out.println("Formato de hora inválido. Usa hh:mm.");
+                }
+            }
+            sucsess = false;
+            while (!sucsess){
+                System.out.println("Hora de fim do evento (hh:mm):");
+                String end = sc.nextLine();
+                try {
+                    endHourTime = hourFormat.parse(end);
+                    sucsess = true;
+                } catch (ParseException e) {
+                    System.out.println("Formato de hora inválido. Usa hh:mm.");
+                }
+            }
+            Calendar eventDate = Calendar.getInstance();
+            eventDate.setTime(dateTime);
+
+            Calendar eventStart = Calendar.getInstance();
+            eventStart.set(Calendar.HOUR_OF_DAY,startHourTime.getHours());
+            eventStart.set(Calendar.MINUTE,startHourTime.getMinutes());
+
+            Calendar eventEnd = Calendar.getInstance();
+            eventEnd.set(Calendar.HOUR_OF_DAY,endHourTime.getHours());
+            eventEnd.set(Calendar.MINUTE,endHourTime.getMinutes());
+
+            newEv = new event(name, local, eventDate, eventStart, eventEnd);
+        }
+        eventManager.editEvent(id1, newEv);
+    }
+
+    public void consultaEventoFiltrado(){
+        System.out.println("1-Data\n2-Nome\n3-Local\n4-Periodo\n");
+        Scanner sc = new Scanner(System.in);
+        String buffer = sc.nextLine();
+        switch (buffer){
+            case "1":
+                System.out.println("Data do evento (dd/mm/aaaa):");
+                String date = sc.nextLine();
+                Calendar dateTime = Calendar.getInstance();
+                SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+                try {
+                    dateTime.setTime(dateFormat.parse(date));
+                } catch (ParseException e) {
+                    System.out.println("Formato de data/hora inválido. Usa dd/mm/aaaa.");
+                }
+                for (event e : eventManager.getEvents()) {
+                    if(e.getDate().equals(dateTime)){
+                        System.out.println(e.toString());
+                    }
+                }
+                break;
+            case "2":
+                System.out.println("Nome do evento:");
+                String name = sc.nextLine();
+                for (event e : eventManager.getEvents()) {
+                    if(e.getName().equals(name)){
+                        System.out.println(e.toString());
+                    }
+                }
+                break;
+            case "3":
+                System.out.println("Local do evento:");
+                String local = sc.nextLine();
+                for (event e : eventManager.getEvents()) {
+                    if(e.getLocal().equals(local)){
+                        System.out.println(e.toString());
+                    }
+                }
+                break;
+            case "4":
+                System.out.println("Data de inicio do periodo (dd/mm/aaaa):");
+                String date1 = sc.nextLine();
+                Calendar dateTime1 = Calendar.getInstance();
+                SimpleDateFormat dateFormat1 = new SimpleDateFormat("dd/MM/yyyy");
+                try {
+                    dateTime1.setTime(dateFormat1.parse(date1));
+                } catch (ParseException e) {
+                    System.out.println("Formato de data/hora inválido. Usa dd/mm/aaaa.");
+                    break;
+                }
+                System.out.println("Data de fim do periodo (dd/mm/aaaa):");
+                String date2 = sc.nextLine();
+                Calendar dateTime2 = Calendar.getInstance();
+                SimpleDateFormat dateFormat2 = new SimpleDateFormat("dd/MM/yyyy");
+                try {
+                    dateTime2.setTime(dateFormat2.parse(date2));
+                } catch (ParseException e) {
+                    System.out.println("Formato de data/hora inválido. Usa dd/mm/aaaa.");
+                    break;
+                }
+                for (event e : eventManager.getEvents()) {
+                    if(e.getDate().after(dateTime1) && e.getDate().before(dateTime2)){
+                        System.out.println(e.toString());
+                    }
+                }
+                break;
+            default:
+                System.out.println("Opção inválida");
+                break;
+        }
+
+    }
+
     @Override
     public void run() {
         Scanner sc = new Scanner(System.in);
         String buffer;
         while(true){
-            System.out.println("Menu:\n\n1-admin login");
+            System.out.println("Menu:\n\n");
             if(adminLogged){
                 System.out.println(
                         "2-criar evento\n" +
                         "3-listar eventos\n" +
+                        "31-listar eventos filtrado\n"+
                         "4-remover evento\n" +
                         "5-editar evento\n" +
                         "6-gerar código evento\n" +
                         "7-consultar presenças\n" +
+                        "71-consultar presenças de um utilizador\n"+
                         "8-Obter ficheiro csv\n" +
                         "9-eliminar presença\n" +
                         "10-inserir presença\n" +
                         "11-logout\n"
                 );
+            }else {
+                System.out.println("1-admin login");
             }
+
             System.out.println("Escreva \"exit\" para terminar o servidor");
             buffer = sc.nextLine();
             switch (buffer){
@@ -383,93 +524,127 @@ class KBMgmt implements Runnable{
 
                     if(userManager.getUser("admin").getEmail().equals(email) && userManager.getUser("admin").getPassword().equals( password)) {
                         adminLogged = true;
-                        System.out.println("Login efetuado com sucesso. Seja bem vindo" + userManager.getUser("admin").getName() +"!");
+                        System.out.println("Login efetuado com sucesso. Seja bem vindo " + userManager.getUser("admin").getName() +"!");
                     }
-                    /*if(email.equals("admin") && password.equals("admin")){
-                        adminLogged = true;
-                        System.out.println("Login efetuado com sucesso");
-                    }else{
-                        System.out.println("Login falhou");
-                    }*/
+                    else{
+                        System.out.println("Credenciais incorretas!");
+                    }
                     break;
+                    case "2":
+                        if(adminLogged) {
+                            createEvent();
+                            break;
+                        }
+                    case "3":
+                        if(adminLogged) {
+                            for (event e : eventManager.getEvents()) {
+                                System.out.println(e.toString());
+                            }
+                            break;
+                        }
+                    case "31":
+                        if(adminLogged){
+                            consultaEventoFiltrado();
+                            break;
+                        }
+                    case "4":
+                        if(adminLogged) {
+                            int id;
+                            System.out.println("ID do evento:");
+                            String strID = sc.nextLine();
+                            id = Integer.parseInt(strID);
+                            if (eventManager.removeEvent(id)) {
+                                System.out.println("Evento removido com sucesso!");
+                            } else {
+                                System.out.println("Evento nao encontrado!");
+                            }
+                            break;
+                        }
+                    case "5":
+                        if(adminLogged) {
+                            editEvent();
+                            break;
+                        }
+                    case "6":
+                        if(adminLogged) {
+                            System.out.println("ID do evento:");
+                            String strID2 = sc.nextLine();
+                            int id2 = Integer.parseInt(strID2);
+                            //eventManager.getEventByCode(strID2).generateRandomCode();
+                            System.out.println("Insira a validade do codigo (em minutos):");
+                            String strVal = sc.nextLine();
+                            int time = Integer.parseInt(strVal);
 
-                case "2":
-                    createEvent();
-                    break;
-                case "3":
-                    for (event e : eventManager.getEvents()) {
-                        System.out.println(e.toString());
-                    }
-                    break;
-                case "4":
-                    int id;
-                    System.out.println("ID do evento:");
-                    String strID = sc.nextLine();
-                    id = Integer.parseInt(strID);
-                    if(eventManager.removeEvent(id)){
-                        System.out.println("Evento removido com sucesso!");
-                    }else{
-                        System.out.println("Evento nao encontrado!");
-                    }
-                    break;
-                case "5":
+                            eventManager.getEventById(id2).generateRandomCodeWithValidity(time);
+                            System.out.println("Codigo do evento: " + eventManager.getEventById(id2).getCode());
+                            eventManager.updateEventDB(id2);
+                            break;
+                        }
+                    case "7":
+                        if(adminLogged) {
+                            System.out.println("ID do evento:");
+                            String strID3 = sc.nextLine();
+                            int id3 = Integer.parseInt(strID3);
+                            System.out.println("Presenças no evento" + eventManager.getEventById(id3).getName() + ":");
+                            for (user u : eventManager.getEventById(id3).getUsersPresent()) {
+                                System.out.println(u.toString());
+                            }
+                            //System.out.println(eventManager.getEventById(id3).getUsersPresent().toString());
+                            break;
+                        }
+                    case "71":
+                        if(adminLogged) {
+                            System.out.println("Email do utilizador:");
+                            String email1 = sc.nextLine();
+                            System.out.println("Presenças do utilizador " + email1 + ":");
+                            for (event e : eventManager.getEvents()) {
+                                if (e.checkPresenceEmail(email1)) {
+                                    System.out.println(e.toString());
+                                }
+                            }
+                            break;
+                        }
+                    case "8":
+                        //csv
+                        break;
+                    case "9":
+                        if(adminLogged) {
+                            System.out.println("ID do evento:");
+                            String code4 = sc.nextLine();
+                            int id4 = Integer.parseInt(code4);
+                            System.out.println("Email do utilizador:");
+                            String email2 = sc.nextLine();
+                            eventManager.getEventById(id4).removePresence(userManager.getUser(email2));
+                            eventManager.updateEventDB(id4);
+                            break;
+                        }
+                    case "10":
+                        if(adminLogged) {
+                            System.out.println("ID do evento:");
+                            String code5 = sc.nextLine();
+                            int id5 = Integer.parseInt(code5);
+                            System.out.println("Email do utilizador:");
+                            String email3 = sc.nextLine();
+                            eventManager.getEventById(id5).addPresence(userManager.getUser(email3));
+                            eventManager.updateEventDB(id5);
+                            break;
+                        }
+                    case "11":
+                        if(adminLogged) {
+                            adminLogged = false;
+                            break;
+                        }
 
-                    break;
-                case "6":
-                    System.out.println("ID do evento:");
-                    String strID2 = sc.nextLine();
-                    int id2 = Integer.parseInt(strID2);
-                    //eventManager.getEventByCode(strID2).generateRandomCode();
-                    eventManager.getEventById(id2).generateRandomCode();
-                    System.out.println("Codigo do evento: "+eventManager.getEventById(id2).getCode());
-                    eventManager.updateEventDB(id2);
-                    break;
-                case "7":
-                    System.out.println("ID do evento:");
-                    String strID3 = sc.nextLine();
-                    int id3 = Integer.parseInt(strID3);
-                    System.out.println("Presenças no evento"+eventManager.getEventById(id3).getName()+":");
-                    for (user u : eventManager.getEventById(id3).getUsersPresent())
-                    {
-                        System.out.println(u.toString());
-                    }
-                    System.out.println(eventManager.getEventById(id3).getUsersPresent().toString());
-                    break;
-                case "8":
-                    //csv
-                    break;
-                case "9":
-                    System.out.println("ID do evento:");
-                    String code4 = sc.nextLine();
-                    int id4 = Integer.parseInt(code4);
-                    System.out.println("Email do utilizador:");
-                    String email2 = sc.nextLine();
-                    eventManager.getEventById(id4).removePresence(userManager.getUser(email2));
-                    eventManager.updateEventDB(id4);
-                    break;
-                case "10":
-                    System.out.println("ID do evento:");
-                    String code5 = sc.nextLine();
-                    int id5 = Integer.parseInt(code5);
-                    System.out.println("Email do utilizador:");
-                    String email3 = sc.nextLine();
-                    eventManager.getEventById(id5).addPresence(userManager.getUser(email3));
-                    eventManager.updateEventDB(id5);
-                    break;
-                case "11":
-                    adminLogged = false;
-                    break;
-
-                case "debug":
-                    System.out.println("Utilizadores:");
-                    for (user u : userManager.users) {
-                        System.out.println(u.toString());
-                    }
-                    System.out.println("Eventos:");
-                    for (event e : eventManager.getEvents()) {
-                        System.out.println(e.toString());
-                    }
-                    break;
+                    case "debug":
+                        System.out.println("Utilizadores:");
+                        for (user u : userManager.users) {
+                            System.out.println(u.toString());
+                        }
+                        System.out.println("Eventos:");
+                        for (event e : eventManager.getEvents()) {
+                            System.out.println(e.toString());
+                        }
+                        break;
 
                 case "exit":
                     System.exit(0);
@@ -479,9 +654,12 @@ class KBMgmt implements Runnable{
                     break;
             }
 
-            /*if(buffer.equalsIgnoreCase("exit")){
-                System.exit(0);
-            }*/
+            System.out.println("Pressione enter para continuar");
+            try {
+                System.in.read();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
 
     }
@@ -506,7 +684,7 @@ public class server {
         request req;
         Thread thr;
 
-        eventManager.checkEventsValidity();
+        //eventManager.checkEventsValidity();
 
         /*if (args.length != 1) {
             System.out.println("Sintaxe: java TcpSerializedTimeServerIncomplete listeningPort");
@@ -521,12 +699,6 @@ public class server {
         try (ServerSocket socket = new ServerSocket(/*Integer.parseInt(args[0]))*/5000)) {
 
             System.out.println("Servidor iniciado no porto " + socket.getLocalPort() + " ...");
-            Calendar end = Calendar.getInstance();
-            //now.setTime(new Date());
-            end.add(Calendar.HOUR, 1);
-            eventManager.createEvent("Evento1", "Local1", Calendar.getInstance(), Calendar.getInstance(), end);
-            eventManager.getEvents().get(0).generateRandomCode();
-            System.out.println("Codigo do evento: "+eventManager.getEvents().get(0).getCode());
             while (true) {
                 Socket toClientSocket = socket.accept();
                 thr = new Thread((Runnable) new managerCLients(toClientSocket, userManager,eventManager), "Thread_" + nCreatedThreads);

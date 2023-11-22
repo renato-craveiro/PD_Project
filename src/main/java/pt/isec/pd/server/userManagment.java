@@ -14,6 +14,19 @@ public class userManagment {
         this.users = (ArrayList<user>) dbManager.loadUsers();
     }
 
+    public void editUser(String email, user newUser){
+        user userToUpdate = getUser(email);
+        if (userToUpdate != null) {
+            // Update the details of the existing user with the new user's details
+            userToUpdate.setName(newUser.getName());
+            userToUpdate.setNEstudante(newUser.getNEstudante());
+            userToUpdate.setEmail(newUser.getEmail());
+            userToUpdate.setPassword(newUser.getPassword());
+            dbManager.updateUser(userToUpdate);
+            System.out.println("User updated successfully.");
+        }
+    }
+
     public void createAdminIfNotExists() {
         String adminEmail = "admin";  // You can set the admin email
         String adminPassword = "admin"; // You can set the admin password

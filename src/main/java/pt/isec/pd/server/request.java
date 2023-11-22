@@ -6,9 +6,9 @@ import pt.isec.pd.types.user;
 
 public class request implements Serializable {
 
-    private static final String[] validRequests = {"REGISTER", "LOGIN", "LOGOUT", "LIST", "SEND", "RECEIVE", "QUIT"};
+    private static final String[] validRequests = {"REGISTER", "LOGIN", "LOGOUT", "LIST", "SEND", "CHANGE", "QUIT"};
     String req;
-    user user;
+    user user, nUser;
     String otherParam;
 
 
@@ -20,6 +20,16 @@ public class request implements Serializable {
         if (isValid(req)) {
             this.user = user;
             this.req = req;
+        } else {
+            this.req = "INVALID";
+        }
+    }
+
+    public request(String req, user user, user newUser) {
+        if (isValid(req)) {
+            this.user = user;
+            this.req = req;
+            this.nUser = newUser;
         } else {
             this.req = "INVALID";
         }

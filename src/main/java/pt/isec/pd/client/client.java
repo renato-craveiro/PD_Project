@@ -16,7 +16,7 @@ import static java.lang.System.exit;
 
 
 public class client {
-    static user currUser;
+    static user currUser, auxUser;
     static String srvAdress;
     static int srvPort;
 
@@ -44,7 +44,9 @@ public class client {
                 req = new request(reqStr, currUser);
 
             }
-
+            if (reqStr.equalsIgnoreCase("CHANGE")){
+                req = new request(reqStr, currUser, auxUser);
+            }
             oout.writeObject(req);
             oout.flush();
 
@@ -53,8 +55,12 @@ public class client {
             //Deserializa a resposta recebida em socket
             response = (String)oin.readObject();
 
+            if(response.contains("ALTERADO")){
+                currUser = auxUser;
+            }
+
             return Objects.requireNonNullElse(response, ("O servidor nao enviou qualquer respota antes de"
-                    + " fechar aligacao TCP!"));
+                    + " fechar a ligacao TCP!"));
 
         }catch(Exception e){
             return("Ocorreu um erro no acesso ao socket:\n\t"+e);
@@ -71,8 +77,24 @@ public class client {
         String email = sc.nextLine();
         System.out.println("Password:");
         String password = sc.nextLine();
+        user auxUser = new user(name, NEstudante, email, password);
         currUser = new user(name, NEstudante, email, password);
         System.out.println("[Servidor]: "+sendRequest("REGISTER"));
+    }
+
+    public static void changeData(){
+        Scanner sc = new Scanner(System.in);
+        System.out.println("Nome:");
+        String name = sc.nextLine();
+        System.out.println("Número de estudante:");
+        String NEstudante = sc.nextLine();
+        System.out.println("Email:");
+        String email = sc.nextLine();
+        System.out.println("Password:");
+        String password = sc.nextLine();
+        auxUser = new user(name, NEstudante, email, password);
+        //currUser = new user(name, NEstudante, email, password);
+        System.out.println("[Servidor]: "+sendRequest("CHANGE"));
     }
 
     public static void login() throws IOException {
@@ -118,9 +140,11 @@ public class client {
             /*case 3:
                 exportCSV();
                 break;
-            case 4:
+            */case 4:
                 changeData();
-                break;*/
+                System.out.println("Efetue o seu login novamente");
+                return false;
+
             case 0:
                 return false;
                 //break;

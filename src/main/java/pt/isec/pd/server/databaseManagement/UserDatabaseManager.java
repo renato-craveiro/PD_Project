@@ -98,6 +98,26 @@ public class UserDatabaseManager {
     }
 
 
+    public void updateUser(user u) {
+        String updateQuery = "UPDATE users SET name=?, NEstudante=?, email=?, password=? WHERE id=?";
+        try (PreparedStatement statement = connection.prepareStatement(updateQuery)) {
+            statement.setString(1, u.getName());
+            statement.setString(2, u.getNEstudante());
+            statement.setString(3, u.getEmail());
+            statement.setString(4, u.getPassword());
+            statement.setInt(5, u.getId());
+
+            int rowsUpdated = statement.executeUpdate();
+            if (rowsUpdated > 0) {
+                System.out.println("User updated successfully.");
+            } else {
+                System.out.println("User not found or not updated.");
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+    }
+
 
     public boolean userExists(String email) {
         String selectQuery = "SELECT * FROM users WHERE email=?";

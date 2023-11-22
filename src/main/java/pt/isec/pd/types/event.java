@@ -35,6 +35,10 @@ public class event {
         return usersPresent;
     }
 
+    public void setUsersPresent(ArrayList<user> usersPresent) {
+        this.usersPresent = usersPresent;
+    }
+
     ArrayList<user> usersPresent = new ArrayList<>();
     String name;
     String local;
@@ -72,6 +76,12 @@ public class event {
     public void generateRandomCode(){
         codeValidity = Calendar.getInstance();
         codeValidity.add(Calendar.MINUTE, 5);
+        code = (int) (Math.random() * 1000000);
+    }
+
+    public void generateRandomCodeWithValidity(int validity){
+        codeValidity = Calendar.getInstance();
+        codeValidity.add(Calendar.MINUTE, validity);
         code = (int) (Math.random() * 1000000);
     }
 

@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.util.Calendar;
+import java.util.Optional;
 import java.util.stream.*;
 import java.util.ArrayList;
 
@@ -52,6 +53,27 @@ public class eventManagement {
     //https://www.baeldung.com/java-csv end*/
 
 
+    public void editEvent(int id, event newEvent){
+        Optional<event> eventToUpdate = events.stream().filter(e -> e.getId() == id).findFirst();
+
+        if (eventToUpdate.isPresent()) {
+            // Update the details of the existing event with the new event's details
+            event existingEvent = eventToUpdate.get();
+            existingEvent.setName(newEvent.getName());
+            existingEvent.setLocal(newEvent.getLocal());
+            existingEvent.setDate(newEvent.getDate());
+            existingEvent.setStart(newEvent.getStart());
+            existingEvent.setEnd(newEvent.getEnd());
+
+
+            // Update the event in the database
+            dbManager.updateEvent(existingEvent);
+            System.out.println("Event updated successfully. New data: " + existingEvent);
+        } else {
+            System.out.println("Event with id " + id + " not found.");
+        }
+
+    }
 
     public void createEvent(String name, String local, Calendar date, Calendar start, Calendar end) {
         event newEvent = new event(name, local, date, start, end);
