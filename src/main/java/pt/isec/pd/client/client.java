@@ -2,9 +2,12 @@ package pt.isec.pd.client;
 
 import pt.isec.pd.server.request;
 import pt.isec.pd.types.user;
+
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.PrintWriter;
 import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.Socket;
@@ -133,10 +136,10 @@ public class client {
             case 2:
                 subscribeEvent();
                 return true;
-            /*case 3:
+            case 3:
                 exportCSV();
-                break;
-            */case 4:
+                return true;
+            case 4:
                 changeData();
                 System.out.println("Efetue o seu login novamente");
                 return false;
@@ -152,13 +155,38 @@ public class client {
 
     }
 
+    private static void exportCSV() {
+        try {
+
+            Scanner sc = new Scanner(System.in);
+            System.out.println("Enter CSV file name:");
+            String fileName = sc.nextLine();
+
+
+            PrintWriter csvWriter = new PrintWriter(new FileWriter(fileName + ".csv"));
+
+
+            String response = sendRequest("LIST");
+
+            if (!response.isEmpty()) {
+
+                csvWriter.println(response);
+                System.out.println("CSV export successful. Data written to " + fileName);
+            } else {
+                System.out.println("Error exporting CSV: " + response);
+            }
+
+            csvWriter.close();
+        } catch (Exception e) {
+            System.out.println("Error exporting CSV: " + e.getMessage());
+        }
+    }
     private static void subscribeEvent() {
         //Scanner sc = new Scanner(System.in);
         //System.out.println("Codigo do evento:");
         //int code = sc.nextInt();
         System.out.println("[Servidor]: "+sendRequest("SEND"));
     }
-
 
     public static boolean logMenu() throws IOException {
         System.out.println("1 - Registar");

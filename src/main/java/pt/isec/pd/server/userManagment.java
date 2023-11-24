@@ -64,7 +64,7 @@ public class userManagment {
         return users.stream().anyMatch((user user) -> user.getEmail().equals(email) && user.getPassword().equals(password));
     }
 
-    public user getUser(String email) {
+    public  user getUser(String email) {
         return users.stream().filter((user user) -> user.getEmail().equals(email)).findFirst().get();
     }
 

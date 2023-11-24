@@ -6,7 +6,7 @@ import pt.isec.pd.types.user;
 
 public class request implements Serializable {
 
-    private static final String[] validRequests = {"REGISTER", "LOGIN", "LOGOUT", "LIST", "SEND", "CHANGE", "QUIT"};
+    private static final String[] validRequests = {"REGISTER", "LOGIN", "LOGOUT", "LIST","EXPORT_CSV", "SEND", "CHANGE", "QUIT"};
     String req;
     user user, nUser;
     String otherParam;
