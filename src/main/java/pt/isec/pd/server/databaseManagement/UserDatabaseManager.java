@@ -21,6 +21,7 @@ public class UserDatabaseManager {
             connection = DriverManager.getConnection("jdbc:sqlite:" + dbName + ".db");
             createTable();
         } catch (ClassNotFoundException | SQLException e) {
+            System.out.println("erro");
             e.printStackTrace();
         }
     }
