@@ -2,7 +2,10 @@ package pt.isec.pd.server.databaseManagement;
 
 import pt.isec.pd.types.event;
 import pt.isec.pd.types.user;
+import pt.isec.pd.server.eventManagement;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.sql.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -51,7 +54,6 @@ public class EventDatabaseManager {
         }
         return calendar;
     }
-
 
     public Calendar parseTime(String timeString) {
         Calendar calendar = Calendar.getInstance();
@@ -210,6 +212,31 @@ public class EventDatabaseManager {
         } catch (SQLException ex) {
             System.out.println("EVENTDATABASEMANAGER: " + ex.getMessage());
             ex.printStackTrace();
+        }
+    }
+
+    public static void exportPresencesEvent(int eventoId) {
+
+        event evento = eventManagement.getEventById(eventoId);
+
+        if (evento != null) {
+            System.out.println("Exportando presenças do evento " + evento.getName() + " (ID: " + eventoId + ")");
+
+            try (FileWriter writer = new FileWriter("presencas_evento_" + eventoId + ".csv")) {
+                // Escrever cabeçalho do CSV
+                writer.write("Nome;Email\n");
+
+                // Escrever presenças no CSV
+                for (user usuario : evento.getUsersPresent()) {
+                    writer.write(usuario.getName() + ";" + usuario.getEmail() + "\n");
+                }
+
+                System.out.println("Presenças exportadas com sucesso para o arquivo presencas_evento_" + eventoId + ".csv");
+            } catch (IOException e) {
+                System.out.println("Erro ao exportar presenças para CSV: " + e.getMessage());
+            }
+        } else {
+            System.out.println("Evento não encontrado com o ID: " + eventoId);
         }
     }
 

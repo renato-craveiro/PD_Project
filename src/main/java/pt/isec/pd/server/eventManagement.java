@@ -16,7 +16,7 @@ import java.util.ArrayList;
 public class eventManagement {
 
     private EventDatabaseManager dbManager;
-    private ArrayList<event> events = new ArrayList<>();
+    private static ArrayList<event> events = new ArrayList<>();
     public ArrayList<event> getEvents() {
         return events;
     }
@@ -69,7 +69,7 @@ public class eventManagement {
         return events.stream().filter((event event) -> event.getCode() == Integer.parseInt(otherParam)).findFirst().get();
     }
 
-    public event getEventById(int id) {
+    public static event getEventById(int id) {
         return events.stream().filter((event event) -> event.getId() == id).findFirst().get();
     }
 
@@ -92,9 +92,7 @@ public class eventManagement {
         });
     }
 
-    /*public void exportToCSV() {
 
-    }*/
 
 
 }

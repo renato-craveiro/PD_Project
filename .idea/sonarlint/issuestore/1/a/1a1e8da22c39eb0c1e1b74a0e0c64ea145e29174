@@ -1,0 +1,10 @@
+
+†
+java:S1319"pThe return type of this method should be an interface such as "List" rather than the implementation "ArrayList".(¯Î˜ä
+g	java:S101
+"MRename this class name to match the regular expression '^[A-Z][a-zA-Z0-9]*$'.(ŽÚåìþÿÿÿÿ
+Q	java:S1252"<This block of commented-out lines of code should be removed.(òÚ§½
+D
+java:S2140?")Use "java.util.Random.nextInt()" instead.(šýÚŒýÿÿÿÿ
+D
+java:S2140E")Use "java.util.Random.nextInt()" instead.(šýÚŒýÿÿÿÿ

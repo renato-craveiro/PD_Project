@@ -760,9 +760,13 @@ class KBMgmt implements Runnable{
                             }
                             break;
                         }
-                    case "8": //Generate CSV
-                        //csv
+
+                    case "8":
+                        System.out.println("1 - Insira o ID do evento");
+                        String strEventoId = sc.nextLine();
+                        EventDatabaseManager.exportPresencesEvent(Integer.parseInt(strEventoId));
                         break;
+
                     case "9": //Eliminate attendance
                         if(adminLogged) {
                             System.out.println("ID do evento:");

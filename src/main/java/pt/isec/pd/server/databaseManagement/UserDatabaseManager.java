@@ -1,7 +1,10 @@
 package pt.isec.pd.server.databaseManagement;
 
 import pt.isec.pd.types.user;
+import pt.isec.pd.server.userManagment;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.sql.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -122,7 +125,6 @@ public class UserDatabaseManager {
             return false;
         }
     }
-
 
 
     public void close() {
