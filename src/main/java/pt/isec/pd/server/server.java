@@ -1,21 +1,22 @@
 package pt.isec.pd.server;
 
+import pt.isec.pd.server.databaseManagement.DatabaseVersionControlManager;
 import pt.isec.pd.server.databaseManagement.EventDatabaseManager;
 import pt.isec.pd.server.databaseManagement.UserDatabaseManager;
 import pt.isec.pd.types.event;
 import pt.isec.pd.types.user;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.net.ServerSocket;
-import java.net.Socket;
+import java.io.*;
+import java.net.*;
+import java.nio.file.AccessDeniedException;
+import java.rmi.Naming;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.NoSuchElementException;
-import java.util.Scanner;
+import java.util.*;
 
 
 class EventValidityChecker implements Runnable{
@@ -211,16 +212,214 @@ class managerCLients implements Runnable {
     }
 }
 
+class ManagerBackups extends UnicastRemoteObject implements ServerBackupServiceInterface, Runnable {
+
+    public static final String SERVICE_NAME = "servidor-backup-database";
+    public static final int MAX_CHUNCK_SIZE = 10000; //bytes
+    protected File localDirectory;
+    List<ServerBackupServiceInterface> backupServers;
+
+    public ManagerBackups() throws RemoteException {
+        backupServers = new ArrayList<>();
+        this.localDirectory = new File("E:\\Estudo\\4ano\\PD\\TP\\PD_Project");
+    }
+
+    protected FileInputStream getRequestedFileInputStream(String fileName) throws IOException {
+        String requestedCanonicalFilePath;
+
+        fileName = fileName.trim();
+
+        /*
+         * Verifica se o ficheiro solicitado existe e encontra-se por baixo da localDirectory.
+         */
+
+        requestedCanonicalFilePath = new File(localDirectory+File.separator+fileName).getCanonicalPath();
+
+        if(!requestedCanonicalFilePath.startsWith(localDirectory.getCanonicalPath()+File.separator)){
+            System.out.println("Nao e' permitido aceder ao ficheiro " + requestedCanonicalFilePath + "!");
+            System.out.println("A directoria de base nao corresponde a " + localDirectory.getCanonicalPath()+"!");
+            throw new AccessDeniedException(fileName);
+        }
+
+        /*
+         * Abre o ficheiro solicitado para leitura.
+         */
+        return new FileInputStream(requestedCanonicalFilePath);
+
+    }
+
+    @Override
+    public byte [] getFileChunk(String fileName, long offset) throws RemoteException, IOException {
+        fileName = "presences.db";
+        byte [] fileChunk = new byte[MAX_CHUNCK_SIZE];
+        int nbytes;
+
+        fileName = fileName.trim();
+        //System.out.println("Recebido pedido para: " + fileName);
+
+        try(FileInputStream requestedFileInputStream = getRequestedFileInputStream(fileName)){
+
+            /*
+             * Obtem um bloco de bytes do ficheiro, omitindo os primeiros offset bytes.
+             */
+            requestedFileInputStream.skip(offset);
+            nbytes = requestedFileInputStream.read(fileChunk);
+
+            if(nbytes == -1){//EOF
+                return null;
+            }
+
+            /*
+             * Se fileChunk nao esta' totalmente preenchido (MAX_CHUNCK_SIZE), recorre-se
+             * a um array auxiliar com tamanho correspondente ao numero de bytes efectivamente lidos.
+             */
+            if(nbytes < fileChunk.length){
+                return Arrays.copyOf(fileChunk, nbytes);
+            }
+
+            return fileChunk;
+
+        }catch(IOException e){
+            System.out.println("Ocorreu a excecao de E/S: \n\t" + e);
+            throw new IOException(fileName, e.getCause());
+        }
+
+    }
+
+    public void getFile(String fileName, ServerBackupInterface cliRemoto) throws IOException {
+        byte [] fileChunk = new byte[MAX_CHUNCK_SIZE];
+        int nbytes;
+
+        fileName = fileName.trim();
+        System.out.println("Recebido pedido para: " + fileName);
+
+        try(FileInputStream requestedFileInputStream = getRequestedFileInputStream(fileName)){
+
+            /*
+             * Obtem os bytes do ficheiro por blocos de bytes ("file chunks").
+             */
+            while((nbytes = requestedFileInputStream.read(fileChunk))!=-1){
+
+                /*
+                 * Escreve o bloco actual no cliente, invocando o metodo writeFileChunk da
+                 * sua interface remota.
+                 */
+
+                cliRemoto.writeFileChunk(fileChunk,nbytes);
+
+                /*...*/
+
+            }
+
+            System.out.println("Ficheiro " + new File(localDirectory+File.separator+fileName).getCanonicalPath() + " transferido para o cliente com sucesso.");
+            System.out.println();
+
+            return;
+
+        }catch(FileNotFoundException e){   //Subclasse de IOException
+            System.out.println("Ocorreu a excecao {" + e + "} ao tentar abrir o ficheiro!");
+            throw new FileNotFoundException(fileName);
+        }catch(IOException e){
+            System.out.println("Ocorreu a excecao de E/S: \n\t" + e);
+            throw new IOException(fileName, e.getCause());
+        }
+
+    }
+
+    @Override
+    public void addBackup(ServerBackupServiceInterface sBackup) throws RemoteException {
+        synchronized (backupServers){
+            if(!backupServers.contains(sBackup)){
+                backupServers.add(sBackup);
+                System.out.println("\n<SERVER BACKUP added>\n");
+            }
+        }
+    }
+
+    @Override
+    public void removeBackup(ServerBackupServiceInterface sBackup) throws RemoteException {
+        synchronized (backupServers){
+            if(!backupServers.contains(sBackup)){
+                backupServers.remove(sBackup);
+                System.out.println("\n<SERVER BACKUP removed>\n");
+            }
+        }
+    }
+
+    @Override
+    public void run(){
+        File localDirectory;
+
+        localDirectory = new File("E:\\Estudo\\4ano\\PD\\TP\\PD_Project");
+
+        if(!localDirectory.exists()){
+            System.out.println("A directoria " + localDirectory + " nao existe!");
+            return;
+        }
+
+        if(!localDirectory.isDirectory()){
+            System.out.println("O caminho " + localDirectory + " nao se refere a uma diretoria!");
+            return;
+        }
+
+        if(!localDirectory.canRead()){
+            System.out.println("Sem permissoes de leitura na diretoria " + localDirectory + "!");
+            return;
+        }
+
+
+        /*
+         * Lanca o rmiregistry localmente no porto TCP por omissao (1099).
+         */
+        try{
+
+            try{
+                System.out.println("<SERVER BACKUP> Tentativa de lancamento do registry no porto " + Registry.REGISTRY_PORT + "...");
+                LocateRegistry.createRegistry(Registry.REGISTRY_PORT);
+                System.out.println("<SERVER BACKUP> Registry lancado!");
+            }catch(RemoteException e){
+                System.out.println("Registry provavelmente ja' em execucao!");
+            }
+
+            /*
+             * Cria o servico.
+             */
+            ManagerBackups fileService = new ManagerBackups();
+
+            System.out.println("<SERVER BACKUP> Servico GetRemoteFile criado e em execucao ("+fileService.getRef().remoteToString()+"...");
+
+            /*
+             * Regista o servico no rmiregistry local para que os clientes possam localiza'-lo, ou seja,
+             * obter a sua referencia remota (endereco IP, porto de escuta, etc.).
+             */
+
+            Naming.bind("rmi://localhost/" + SERVICE_NAME, fileService);
+            System.out.println("<SERVER BACKUP> Servico " + SERVICE_NAME + " registado no registry...");
+
+        }catch(RemoteException e){
+            System.out.println("Erro remoto - " + e);
+            System.exit(1);
+        }catch(Exception e){
+            System.out.println("Erro - " + e);
+            System.exit(1);
+        }
+    }
+
+
+}
+
 
 class KBMgmt implements Runnable{
     boolean adminLogged;
     eventManagement eventManager;
     userManagment userManager;
+    DatabaseVersionControlManager versionManager;
 
-    public KBMgmt(boolean adminLogged, eventManagement eventManager, userManagment userManager) {
+    public KBMgmt(boolean adminLogged, eventManagement eventManager, userManagment userManager, DatabaseVersionControlManager versionManager) {
         this.adminLogged = adminLogged;
         this.eventManager = eventManager;
         this.userManager = userManager;
+        this.versionManager = versionManager;
     }
 
 
@@ -239,6 +438,7 @@ class KBMgmt implements Runnable{
 
         System.out.println("Local do evento:");
         String local = sc.nextLine();
+
 
 
         while (!sucsess){
@@ -291,6 +491,7 @@ class KBMgmt implements Runnable{
         eventManager.createEvent(name, local, eventDate, eventStart, eventEnd);
         eventManager.getEvents().get(eventManager.getEvents().size()-1).generateRandomCode();
         System.out.println("Codigo do evento: "+eventManager.getEvents().get(eventManager.getEvents().size()-1).getCode());
+        versionManager.updateVersion();
     }
 
     public void editEvent(){
@@ -442,6 +643,8 @@ class KBMgmt implements Runnable{
         Scanner sc = new Scanner(System.in);
         String buffer;
         while(true){
+            //Just to see the DatabaseVersion
+            System.out.println("DataBase version: " + versionManager.getCurrentVersion());
             System.out.println("Menu:\n\n");
             if(adminLogged){
                 System.out.println(
@@ -465,7 +668,7 @@ class KBMgmt implements Runnable{
             System.out.println("Escreva \"exit\" para terminar o servidor");
             buffer = sc.nextLine();
             switch (buffer){
-                case "1":
+                case "1": //Login
                     if(!userManager.checkUser("admin")){
                         System.out.println("Admin nao existe... Crie um admin primeiro!");
                         break;
@@ -484,42 +687,43 @@ class KBMgmt implements Runnable{
                         System.out.println("Credenciais incorretas!");
                     }
                     break;
-                    case "2":
+                    case "2": //Create event
                         if(adminLogged) {
                             createEvent();
                             break;
                         }
-                    case "3":
+                    case "3": //List events
                         if(adminLogged) {
                             for (event e : eventManager.getEvents()) {
                                 System.out.println(e.toString());
                             }
                             break;
                         }
-                    case "31":
+                    case "31": //List filtered events
                         if(adminLogged){
                             consultaEventoFiltrado();
                             break;
                         }
-                    case "4":
+                    case "4": //Remove event
                         if(adminLogged) {
                             int id;
                             System.out.println("ID do evento:");
                             String strID = sc.nextLine();
                             id = Integer.parseInt(strID);
                             if (eventManager.removeEvent(id)) {
+                                versionManager.updateVersion();
                                 System.out.println("Evento removido com sucesso!");
                             } else {
                                 System.out.println("Evento nao encontrado!");
                             }
                             break;
                         }
-                    case "5":
+                    case "5": //Edit event
                         if(adminLogged) {
                             editEvent();
                             break;
                         }
-                    case "6":
+                    case "6": //Generate code
                         if(adminLogged) {
                             System.out.println("ID do evento:");
                             String strID2 = sc.nextLine();
@@ -533,7 +737,7 @@ class KBMgmt implements Runnable{
                             eventManager.updateEventDB(id2);
                             break;
                         }
-                    case "7":
+                    case "7": //Check attendance
                         if(adminLogged) {
                             System.out.println("ID do evento:");
                             String strID3 = sc.nextLine();
@@ -544,7 +748,7 @@ class KBMgmt implements Runnable{
                             }
                             break;
                         }
-                    case "71":
+                    case "71": //Check User attendance
                         if(adminLogged) {
                             System.out.println("Email do utilizador:");
                             String email1 = sc.nextLine();
@@ -556,10 +760,10 @@ class KBMgmt implements Runnable{
                             }
                             break;
                         }
-                    case "8":
+                    case "8": //Generate CSV
                         //csv
                         break;
-                    case "9":
+                    case "9": //Eliminate attendance
                         if(adminLogged) {
                             System.out.println("ID do evento:");
                             String code4 = sc.nextLine();
@@ -569,9 +773,10 @@ class KBMgmt implements Runnable{
                             eventManager.getEventById(id4).removePresence(userManager.getUser(email2));
                             eventManager.removeUserEvent(userManager.getUser(email2),eventManager.getEventById(id4));
                             eventManager.updateEventDB(id4);
+                            versionManager.updateVersion();
                             break;
                         }
-                    case "10":
+                    case "10": //Add attendance
                         if(adminLogged) {
                             System.out.println("ID do evento:");
                             String code5 = sc.nextLine();
@@ -580,9 +785,10 @@ class KBMgmt implements Runnable{
                             String email3 = sc.nextLine();
                             eventManager.getEventById(id5).addPresence(userManager.getUser(email3));
                             eventManager.updateEventDB(id5);
+                            versionManager.updateVersion();
                             break;
                         }
-                    case "11":
+                    case "11": //Logout
                         if(adminLogged) {
                             adminLogged = false;
                             break;
@@ -619,39 +825,48 @@ class KBMgmt implements Runnable{
 }
 
 
-
 public class server {
-
     public static final String SQLITEDB ="presences";
 
-
     public static void main(String args[]) {
+
         String DB_PATH = SQLITEDB;
+
         if(args.length != 2 /*DEVE SER 3 POR CAUSA DO RMI*/){
             System.out.println("Sintaxe: java pt.isec.pd.server porto caminho_baseDados ");
             return;
         }
-        DB_PATH = args[1];
-        int port = Integer.parseInt(args[0]);
 
+        //Reading args Server port and DataBase Path
+        int port = Integer.parseInt(args[0]);
+        DB_PATH = args[1];
 
         try (ServerSocket socket = new ServerSocket(/*Integer.parseInt(args[0])) //5000)*/port)) {
-            userManagment userManager = new userManagment(new UserDatabaseManager(DB_PATH));
-
             int nCreatedThreads = 0;
-            userManager.createAdminIfNotExists();
+
+            //Creates the DataBase "Controllers"
+            userManagment userManager = new userManagment(new UserDatabaseManager(DB_PATH));
             eventManagement eventManager = new eventManagement(new EventDatabaseManager(DB_PATH));
+            DatabaseVersionControlManager versionManager = new DatabaseVersionControlManager(DB_PATH);
+            userManager.createAdminIfNotExists();
 
+            //Just to see the DatabaseVersion
+            System.out.println("DataBase version: " + versionManager.getCurrentVersion());
+
+            //Creates Thread
             Thread thr;
-
-
-
             Thread eventValidityChecker = new Thread(new EventValidityChecker(eventManager));
             eventValidityChecker.start();
-
-            Thread kb = new Thread(new KBMgmt(false, eventManager, userManager));
+            Thread kb = new Thread(new KBMgmt(false, eventManager, userManager, versionManager));
             kb.start();
-            System.out.println("Servidor iniciado no porto " + socket.getLocalPort() + " ...");
+
+            Thread mb = new Thread((Runnable) new ManagerBackups(), "Thread_" + 1);
+            mb.start();
+
+            Thread hb = new Thread(new HeartbeatSender(versionManager));
+            hb.start();
+
+
             while (true) {
                 Socket toClientSocket = socket.accept();
                 thr = new Thread((Runnable) new managerCLients(toClientSocket, userManager,eventManager), "Thread_" + nCreatedThreads);
@@ -664,7 +879,5 @@ public class server {
         } catch (IOException e) {
             System.out.println("Ocorreu um erro ao nivel do socket de escuta:\n\t" + e);
         }
-
-
     }
 }

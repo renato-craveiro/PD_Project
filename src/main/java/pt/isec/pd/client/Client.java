@@ -14,7 +14,7 @@ import java.util.Scanner;
 
 
 
-public class client {
+public class Client {
     static user currUser, auxUser;
     static String srvAdress;
     static int srvPort;

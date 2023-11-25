@@ -101,9 +101,4 @@ public class userManagment {
         users.stream().filter((user user) -> user.getEmail().equals(email)).forEach((user user) -> user.setLogged(logged));
     }
 
-
-
-
-
-
 }
