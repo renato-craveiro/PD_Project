@@ -10,7 +10,7 @@ public class DatabaseVersionControlManager {
     private Connection connection;
     public HeartbeatSender heartbeatSender;
 
-    public DatabaseVersionControlManager(String dbName){
+    public DatabaseVersionControlManager(String dbName, int currentVersion, String rmiServiceName){
         try {
             Class.forName("org.sqlite.JDBC");
             connection = DriverManager.getConnection("jdbc:sqlite:" + dbName + ".db");

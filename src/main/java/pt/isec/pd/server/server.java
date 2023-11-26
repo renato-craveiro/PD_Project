@@ -9,6 +9,8 @@ import pt.isec.pd.types.user;
 import java.io.*;
 import java.net.*;
 import java.nio.file.AccessDeniedException;
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
 import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -50,51 +52,46 @@ class managerCLients implements Runnable {
     public void run(){
 
         request req;
-            try (
-                    ObjectOutputStream oout = new ObjectOutputStream(toClientSocket.getOutputStream());
-                    ObjectInputStream oin = new ObjectInputStream(toClientSocket.getInputStream())) {
+        try (
+                ObjectOutputStream oout = new ObjectOutputStream(toClientSocket.getOutputStream());
+                ObjectInputStream oin = new ObjectInputStream(toClientSocket.getInputStream())) {
 
-                Object o = oin.readObject();
-                if (o instanceof request) {
-                    req = (request) o;
-                    System.out.println("Recebido \"" + req.req + "\" de " +
-                            toClientSocket.getInetAddress().getHostAddress() + ":" +
-                            toClientSocket.getPort()+"["+req.user.getName()+"]");
+            Object o = oin.readObject();
+            if (o instanceof request) {
+                req = (request) o;
+                System.out.println("Recebido \"" + req.req + "\" de " + toClientSocket.getInetAddress().getHostAddress() + ":" + toClientSocket.getPort()+"["+req.user.getName()+"]");
 
-                    if (!req.req.equalsIgnoreCase("REGISTER")
-                            && !req.req.equalsIgnoreCase("LOGIN")
-                            && !req.req.equalsIgnoreCase("LOGOUT")
-                            && !req.req.equalsIgnoreCase("LIST")
-                            && !req.req.equalsIgnoreCase("SEND")
-                            && !req.req.equalsIgnoreCase("CHANGE")
-                            && !req.req.equalsIgnoreCase("QUIT")) {
-                        System.out.println("Unexpected request received from " +
-                                toClientSocket.getInetAddress().getHostAddress() + ":" +
-                                toClientSocket.getPort());
-                        String response ="Pedido nao esperado!";
+                if (!req.req.equalsIgnoreCase("REGISTER")
+                        && !req.req.equalsIgnoreCase("LOGIN")
+                        && !req.req.equalsIgnoreCase("LOGOUT")
+                        && !req.req.equalsIgnoreCase("LIST")
+                        && !req.req.equalsIgnoreCase("SEND")
+                        && !req.req.equalsIgnoreCase("CHANGE")
+                        && !req.req.equalsIgnoreCase("QUIT")) {
 
-                        oout.writeObject(response);
-                        oout.flush();
-                        return;
+                    System.out.println("Unexpected request received from " + toClientSocket.getInetAddress().getHostAddress() + ":" + toClientSocket.getPort());
+                    String response ="Pedido nao esperado!";
 
-                    }
-                    switch (req.req) {
-                        case "REGISTER":
-                            if(userManager.checkUser(req.user)){
-                                String response = "User already exists";
+                    oout.writeObject(response);
+                    oout.flush();
+                    return;
 
-                                oout.writeObject(response);
-                                oout.flush();
+                }
+                switch (req.req) {
+                    case "REGISTER":
+                        if(userManager.checkUser(req.user)){
+                            String response = "User already exists";
 
+                            oout.writeObject(response);
+                            oout.flush();
+                        }else {
+                            userManager.createUser(req.user);
+                            String response = "Utilizador criado!";
 
-                            }else {
-                                userManager.createUser(req.user);
-                                String response = "Utilizador criado!";
-
-                                oout.writeObject(response);
-                                oout.flush();
-                            }
-                            break;
+                            oout.writeObject(response);
+                            oout.flush();
+                        }
+                        break;
                         case "LOGIN":
                             if(!userManager.checkUser(req.user)){
                                 String response = "Utilizador nao existente...";
@@ -114,22 +111,22 @@ class managerCLients implements Runnable {
                                 oout.flush();
                             }
                             break;
-                        case "LOGOUT", "QUIT":
-                            break;
-                        case "LIST":
-                            StringBuilder sb = new StringBuilder();
-                            int counter = 0;
-                            for (event e : eventManager.getEvents()) {
-                                if(e.checkPresenceEmail(req.user.getEmail())){
-                                    sb.append(e.toClientString());
-                                    counter++;
-                                }
-                            }
-                            if(counter==0){
-                                String response = "Nao foram encontrados eventos!";
+                            case "LOGOUT", "QUIT":
+                                break;
+                                case "LIST":
+                                    StringBuilder sb = new StringBuilder();
+                                    int counter = 0;
+                                    for (event e : eventManager.getEvents()) {
+                                        if(e.checkPresenceEmail(req.user.getEmail())){
+                                            sb.append(e.toClientString());
+                                            counter++;
+                                        }
+                                    }
+                                    if(counter==0){
+                                        String response = "Nao foram encontrados eventos!";
 
-                                oout.writeObject(response);
-                                oout.flush();
+                                        oout.writeObject(response);
+                                        oout.flush();
                             }else {
                                 String header = "Descricao;Local;Data;HoraInicio\n";
                                 String response = header+sb+"\n";
@@ -195,43 +192,37 @@ class managerCLients implements Runnable {
                                 oout.flush();
                             }
                             break;
-                    }
-
                 }
-
-
-
-            } catch (Exception e) {
-                System.out.println("Problema na comunicacao com o cliente " +
-                        toClientSocket.getInetAddress().getHostAddress() + ":" +
-                        toClientSocket.getPort() + "\n\t" + e);
             }
-
-
-
+        } catch (Exception e) {
+            System.out.println("Problema na comunicacao com o cliente " + toClientSocket.getInetAddress().getHostAddress() + ":" + toClientSocket.getPort() + "\n\t" + e);
+        }
     }
 }
 
 class ManagerBackups extends UnicastRemoteObject implements ServerBackupServiceInterface, Runnable {
 
-    public static final String SERVICE_NAME = "servidor-backup-database";
+    public static String PATH;
+    public static String SERVICE_NAME;
+    public static int REG_PORT;
     public static final int MAX_CHUNCK_SIZE = 10000; //bytes
     protected File localDirectory;
     List<ServerBackupServiceInterface> backupServers;
 
-    public ManagerBackups() throws RemoteException {
-        backupServers = new ArrayList<>();
-        this.localDirectory = new File("E:\\Estudo\\4ano\\PD\\TP\\PD_Project");
+    // Constructor
+    public ManagerBackups(String serviceName, int regPort, String path) throws RemoteException {
+        SERVICE_NAME = serviceName;
+        REG_PORT = regPort;
+        PATH = path;
+
+        this.backupServers = new ArrayList<>();
+        this.localDirectory = new File(PATH); //= new File("E:\\Estudo\\4ano\\PD\\TP\\PD_Project");
     }
 
     protected FileInputStream getRequestedFileInputStream(String fileName) throws IOException {
+
         String requestedCanonicalFilePath;
-
         fileName = fileName.trim();
-
-        /*
-         * Verifica se o ficheiro solicitado existe e encontra-se por baixo da localDirectory.
-         */
 
         requestedCanonicalFilePath = new File(localDirectory+File.separator+fileName).getCanonicalPath();
 
@@ -241,27 +232,20 @@ class ManagerBackups extends UnicastRemoteObject implements ServerBackupServiceI
             throw new AccessDeniedException(fileName);
         }
 
-        /*
-         * Abre o ficheiro solicitado para leitura.
-         */
         return new FileInputStream(requestedCanonicalFilePath);
-
     }
 
     @Override
-    public byte [] getFileChunk(String fileName, long offset) throws RemoteException, IOException {
-        fileName = "presences.db";
+    public byte [] getFileChunk(String dbName, long offset) throws RemoteException, IOException {
+        dbName = SERVICE_NAME;
         byte [] fileChunk = new byte[MAX_CHUNCK_SIZE];
         int nbytes;
 
-        fileName = fileName.trim();
+        dbName = dbName.trim();
         //System.out.println("Recebido pedido para: " + fileName);
 
-        try(FileInputStream requestedFileInputStream = getRequestedFileInputStream(fileName)){
+        try(FileInputStream requestedFileInputStream = getRequestedFileInputStream(dbName)){
 
-            /*
-             * Obtem um bloco de bytes do ficheiro, omitindo os primeiros offset bytes.
-             */
             requestedFileInputStream.skip(offset);
             nbytes = requestedFileInputStream.read(fileChunk);
 
@@ -269,10 +253,6 @@ class ManagerBackups extends UnicastRemoteObject implements ServerBackupServiceI
                 return null;
             }
 
-            /*
-             * Se fileChunk nao esta' totalmente preenchido (MAX_CHUNCK_SIZE), recorre-se
-             * a um array auxiliar com tamanho correspondente ao numero de bytes efectivamente lidos.
-             */
             if(nbytes < fileChunk.length){
                 return Arrays.copyOf(fileChunk, nbytes);
             }
@@ -281,47 +261,35 @@ class ManagerBackups extends UnicastRemoteObject implements ServerBackupServiceI
 
         }catch(IOException e){
             System.out.println("Ocorreu a excecao de E/S: \n\t" + e);
-            throw new IOException(fileName, e.getCause());
+            throw new IOException(dbName, e.getCause());
         }
 
     }
 
-    public void getFile(String fileName, ServerBackupInterface cliRemoto) throws IOException {
+    public void getFile(String dbName, ServerBackupInterface servBackupRef) throws IOException {
         byte [] fileChunk = new byte[MAX_CHUNCK_SIZE];
         int nbytes;
 
-        fileName = fileName.trim();
-        System.out.println("Recebido pedido para: " + fileName);
+        dbName = dbName.trim();
+        System.out.println("Recebido pedido para: " + dbName);
 
-        try(FileInputStream requestedFileInputStream = getRequestedFileInputStream(fileName)){
+        try(FileInputStream requestedFileInputStream = getRequestedFileInputStream(dbName)){
 
-            /*
-             * Obtem os bytes do ficheiro por blocos de bytes ("file chunks").
-             */
             while((nbytes = requestedFileInputStream.read(fileChunk))!=-1){
-
-                /*
-                 * Escreve o bloco actual no cliente, invocando o metodo writeFileChunk da
-                 * sua interface remota.
-                 */
-
-                cliRemoto.writeFileChunk(fileChunk,nbytes);
-
-                /*...*/
-
+                servBackupRef.writeFileChunk(fileChunk,nbytes);
             }
 
-            System.out.println("Ficheiro " + new File(localDirectory+File.separator+fileName).getCanonicalPath() + " transferido para o cliente com sucesso.");
+            System.out.println("Ficheiro " + new File(localDirectory+File.separator+dbName).getCanonicalPath() + " transferido para o cliente com sucesso.");
             System.out.println();
 
             return;
 
-        }catch(FileNotFoundException e){   //Subclasse de IOException
-            System.out.println("Ocorreu a excecao {" + e + "} ao tentar abrir o ficheiro!");
-            throw new FileNotFoundException(fileName);
+        }catch(FileNotFoundException e){
+            System.out.println("<SERVER BACKUP> Error with file! -> " + e);
+            throw new FileNotFoundException(dbName);
         }catch(IOException e){
-            System.out.println("Ocorreu a excecao de E/S: \n\t" + e);
-            throw new IOException(fileName, e.getCause());
+            System.out.println("<SERVER BACKUP> E/S-> \n\t" + e);
+            throw new IOException(dbName, e.getCause());
         }
 
     }
@@ -331,7 +299,7 @@ class ManagerBackups extends UnicastRemoteObject implements ServerBackupServiceI
         synchronized (backupServers){
             if(!backupServers.contains(sBackup)){
                 backupServers.add(sBackup);
-                System.out.println("\n<SERVER BACKUP added>\n");
+                System.out.println("\n<SERVER BACKUP added> \n" + backupServers.size());
             }
         }
     }
@@ -341,60 +309,53 @@ class ManagerBackups extends UnicastRemoteObject implements ServerBackupServiceI
         synchronized (backupServers){
             if(!backupServers.contains(sBackup)){
                 backupServers.remove(sBackup);
-                System.out.println("\n<SERVER BACKUP removed>\n");
+                System.out.println("\n<SERVER BACKUP removed> \n" + backupServers.size());
             }
         }
     }
 
+    public static boolean checkDirectory(File localDirectory){
+
+        if (!localDirectory.exists()) {
+            System.out.println("A diretoria " + localDirectory + " nao existe!");
+            return false;
+        }
+
+        if (!localDirectory.isDirectory()) {
+            System.out.println("O caminho " + localDirectory + " nao se refere a uma diretoria!");
+            return false;
+        }
+        if (!localDirectory.canWrite()) {
+            System.out.println("Sem permissoes de escrita na diretoria " + localDirectory);
+            return false;
+        }
+        return true;
+    }
+
     @Override
     public void run(){
-        File localDirectory;
 
-        localDirectory = new File("E:\\Estudo\\4ano\\PD\\TP\\PD_Project");
+        File localDirectory = new File(PATH); // localDirectory = new File("E:\\Estudo\\4ano\\PD\\TP\\PD_Project");
 
-        if(!localDirectory.exists()){
-            System.out.println("A directoria " + localDirectory + " nao existe!");
+        // Checks if exists/isDirectory/canWrite returns true if its all good
+        if(!checkDirectory(localDirectory))
             return;
-        }
 
-        if(!localDirectory.isDirectory()){
-            System.out.println("O caminho " + localDirectory + " nao se refere a uma diretoria!");
-            return;
-        }
-
-        if(!localDirectory.canRead()){
-            System.out.println("Sem permissoes de leitura na diretoria " + localDirectory + "!");
-            return;
-        }
-
-
-        /*
-         * Lanca o rmiregistry localmente no porto TCP por omissao (1099).
-         */
+        // Start RMI Registry on port that is received by args[3]
         try{
 
             try{
-                System.out.println("<SERVER BACKUP> Tentativa de lancamento do registry no porto " + Registry.REGISTRY_PORT + "...");
-                LocateRegistry.createRegistry(Registry.REGISTRY_PORT);
-                System.out.println("<SERVER BACKUP> Registry lancado!");
+                LocateRegistry.createRegistry(REG_PORT);
+                System.out.println("<SERVER BACKUP> Registry running!");
             }catch(RemoteException e){
-                System.out.println("Registry provavelmente ja' em execucao!");
+                System.out.println("<SERVER BACKUP> Registry error");
             }
 
-            /*
-             * Cria o servico.
-             */
-            ManagerBackups fileService = new ManagerBackups();
-
-            System.out.println("<SERVER BACKUP> Servico GetRemoteFile criado e em execucao ("+fileService.getRef().remoteToString()+"...");
-
-            /*
-             * Regista o servico no rmiregistry local para que os clientes possam localiza'-lo, ou seja,
-             * obter a sua referencia remota (endereco IP, porto de escuta, etc.).
-             */
+            // Starts the service
+            ManagerBackups fileService = new ManagerBackups(SERVICE_NAME, REG_PORT, PATH);
 
             Naming.bind("rmi://localhost/" + SERVICE_NAME, fileService);
-            System.out.println("<SERVER BACKUP> Servico " + SERVICE_NAME + " registado no registry...");
+            System.out.println("<SERVER BACKUP> Regestry service " + SERVICE_NAME + " iniciated!");
 
         }catch(RemoteException e){
             System.out.println("Erro remoto - " + e);
@@ -404,8 +365,6 @@ class ManagerBackups extends UnicastRemoteObject implements ServerBackupServiceI
             System.exit(1);
         }
     }
-
-
 }
 
 
@@ -421,7 +380,6 @@ class KBMgmt implements Runnable{
         this.userManager = userManager;
         this.versionManager = versionManager;
     }
-
 
     private void createEvent() {
 
@@ -828,30 +786,41 @@ class KBMgmt implements Runnable{
     }
 }
 
-
 public class server {
     public static final String SQLITEDB ="presences";
 
+    //Method gets ex: E:\Estudo\4ano\PD\TP\PD_Project\presences and returns E:\Estudo\4ano\PD\TP\PD_Project
+    public static String removeLastPath(String p) {
+        Path path = FileSystems.getDefault().getPath(p);
+        Path newPath = path.getParent();
+        return newPath.toString();
+    }
+
     public static void main(String args[]) {
 
+        //Defaults
         String DB_PATH = SQLITEDB;
+        String RMI_NAME = "servidor-backup-database";
+        int REGESTRY_PORT = 1099;
 
-        if(args.length != 2 /*DEVE SER 3 POR CAUSA DO RMI*/){
-            System.out.println("Sintaxe: java pt.isec.pd.server porto caminho_baseDados ");
+        if(args.length != 4){
+            System.out.println("Missing arguments\nSintaxe: (cmd -> java pt.isec.pd.server) (Port) (database_path) (RMI_service_name) (Registry_port)");
             return;
         }
 
-        //Reading args Server port and DataBase Path
+        //Reading args Port DataBasePath RMIServiceName and RegestryPort (dont put .db on dataBase)
         int port = Integer.parseInt(args[0]);
         DB_PATH = args[1];
+        RMI_NAME = args[2];
+        REGESTRY_PORT = Integer.parseInt(args[3]);
 
-        try (ServerSocket socket = new ServerSocket(/*Integer.parseInt(args[0])) //5000)*/port)) {
+        try (ServerSocket socket = new ServerSocket(port)) {
             int nCreatedThreads = 0;
 
             //Creates the DataBase "Controllers"
             userManagment userManager = new userManagment(new UserDatabaseManager(DB_PATH));
             eventManagement eventManager = new eventManagement(new EventDatabaseManager(DB_PATH));
-            DatabaseVersionControlManager versionManager = new DatabaseVersionControlManager(DB_PATH);
+            DatabaseVersionControlManager versionManager = new DatabaseVersionControlManager(DB_PATH, REGESTRY_PORT, RMI_NAME);
             userManager.createAdminIfNotExists();
 
             //Just to see the DatabaseVersion
@@ -864,13 +833,16 @@ public class server {
             Thread kb = new Thread(new KBMgmt(false, eventManager, userManager, versionManager));
             kb.start();
 
-            Thread mb = new Thread((Runnable) new ManagerBackups(), "Thread_" + 1);
+
+            //Thread to deal with the Server Backups
+            Thread mb = new Thread((Runnable) new ManagerBackups(RMI_NAME,REGESTRY_PORT,removeLastPath(DB_PATH)), "Thread_" + 1);
             mb.start();
 
-            Thread hb = new Thread(new HeartbeatSender(versionManager));
+            //Thread to send the heartbeat every 10sec, gets versionManager to send the current version to the Servers
+            Thread hb = new Thread(new HeartbeatSender(versionManager, REGESTRY_PORT, RMI_NAME));
             hb.start();
 
-
+            //Threads to handle the clients
             while (true) {
                 Socket toClientSocket = socket.accept();
                 thr = new Thread((Runnable) new managerCLients(toClientSocket, userManager,eventManager), "Thread_" + nCreatedThreads);

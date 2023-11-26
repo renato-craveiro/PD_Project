@@ -16,9 +16,13 @@ public class HeartbeatSender implements Runnable {
     public DatagramSocket socket;
     DatabaseVersionControlManager vs;
     public int currentVersion;
+    private int registryPort;
+    private String rmiServiceName;
 
     // Constructor for the Server Thread that receivs the DatabaseVersionControlManager to send the current version every 5sec
-    public HeartbeatSender(DatabaseVersionControlManager vs) {
+    public HeartbeatSender(DatabaseVersionControlManager vs, int registryPort, String rmiServiceName) {
+        this.registryPort = registryPort;
+        this.rmiServiceName = rmiServiceName;
         this.vs = vs;
         try {
             this.group = InetAddress.getByName("230.44.44.44");
@@ -43,7 +47,7 @@ public class HeartbeatSender implements Runnable {
     public void sendHeartbeat(int currentVersion) {
         this.currentVersion = currentVersion;
         try {
-            HeartbeatData heartbeatData = new HeartbeatData(currentVersion);
+            HeartbeatData heartbeatData = new HeartbeatData(registryPort, rmiServiceName, currentVersion);
             byte[] data = heartbeatData.dataByte();
             DatagramPacket packet = new DatagramPacket(data, data.length, group, 4444);
             socket.send(packet);

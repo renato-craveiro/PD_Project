@@ -51,8 +51,6 @@ public class Client {
             oout.writeObject(req);
             oout.flush();
 
-
-
             //Deserializa a resposta recebida em socket
             response = (String)oin.readObject();
 
@@ -60,8 +58,7 @@ public class Client {
                 currUser = auxUser;
             }
 
-            return Objects.requireNonNullElse(response, ("O servidor nao enviou qualquer respota antes de"
-                    + " fechar a ligacao TCP!"));
+            return Objects.requireNonNullElse(response, ("O servidor nao enviou qualquer respota antes de" + " fechar a ligacao TCP!"));
 
         }catch(Exception e){
             return("Ocorreu um erro no acesso ao socket:\n\t"+e);
@@ -228,7 +225,6 @@ public class Client {
         } catch (IOException e) {
             throw new IllegalStateException("Erro a tentar procurar por servidor/porto", e);
         }
-
 
         while(logMenu()){
             System.out.println("Pressione enter para continuar");

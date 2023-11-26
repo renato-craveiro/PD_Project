@@ -6,21 +6,17 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 
 public class HeartbeatData implements Serializable {
-    private int rmiRegistryPort;
+    private int registryPort;
     private String rmiServiceName;
     private int currentVersion;
 
-    public HeartbeatData(int currentVersion) {
-        this.rmiRegistryPort = 1099;
-        this.rmiServiceName = "servidor-backup-database";
+    public HeartbeatData(int registryPort, String rmiServiceName, int currentVersion) {
+        this.registryPort = registryPort;
+        this.rmiServiceName = rmiServiceName;
         this.currentVersion = currentVersion;
     }
-
-    // Getter methods
-
-
-    public int getRmiRegistryPort() {
-        return rmiRegistryPort;
+    public int getRegistryPort() {
+        return registryPort;
     }
 
     public String getRmiServiceName() {
