@@ -17,7 +17,7 @@ import java.util.Scanner;
 
 
 
-public class Client {
+public class client {
     static user currUser, auxUser;
     static String srvAdress;
     static int srvPort;
@@ -25,7 +25,6 @@ public class Client {
     static Socket socket;
     public static String sendRequest(String reqStr){
         request req;// = new request();
-
 
         String response;
         try(Socket socket = new Socket(InetAddress.getByName(srvAdress),srvPort/*InetAddress.getByName(args[0]), Integer.parseInt(args[1])*/);
@@ -178,6 +177,7 @@ public class Client {
             System.out.println("Error exporting CSV: " + e.getMessage());
         }
     }
+
     private static void subscribeEvent() {
         //Scanner sc = new Scanner(System.in);
         //System.out.println("Codigo do evento:");
@@ -209,7 +209,6 @@ public class Client {
     }
 
 
-
     public static final int TIMEOUT = 10; //segundos
     public static void main(String[] args) throws Exception {
         if(args.length != 2){
@@ -220,16 +219,18 @@ public class Client {
         srvPort = Integer.parseInt(args[1]);
 
         try (Socket connectionTest = new Socket(srvAdress, srvPort)) {
+
+            while(logMenu()){
+                System.out.println("Pressione enter para continuar");
+                System.in.read();
+            }
+
         } catch (ConnectException e) {
             throw new Exception("Server nao esta a correr");
         } catch (IOException e) {
             throw new IllegalStateException("Erro a tentar procurar por servidor/porto", e);
         }
 
-        while(logMenu()){
-            System.out.println("Pressione enter para continuar");
-            System.in.read();
-        }
 
     }
 

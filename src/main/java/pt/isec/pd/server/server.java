@@ -51,85 +51,87 @@ class managerCLients implements Runnable {
     @Override
     public void run(){
 
-        request req;
-        try (
-                ObjectOutputStream oout = new ObjectOutputStream(toClientSocket.getOutputStream());
-                ObjectInputStream oin = new ObjectInputStream(toClientSocket.getInputStream())) {
 
-            Object o = oin.readObject();
-            if (o instanceof request) {
-                req = (request) o;
-                System.out.println("Recebido \"" + req.req + "\" de " + toClientSocket.getInetAddress().getHostAddress() + ":" + toClientSocket.getPort()+"["+req.user.getName()+"]");
+        {
+            request req;
+            try (
+                    ObjectOutputStream oout = new ObjectOutputStream(toClientSocket.getOutputStream());
+                    ObjectInputStream oin = new ObjectInputStream(toClientSocket.getInputStream())) {
 
-                if (!req.req.equalsIgnoreCase("REGISTER")
-                        && !req.req.equalsIgnoreCase("LOGIN")
-                        && !req.req.equalsIgnoreCase("LOGOUT")
-                        && !req.req.equalsIgnoreCase("LIST")
-                        && !req.req.equalsIgnoreCase("SEND")
-                        && !req.req.equalsIgnoreCase("CHANGE")
-                        && !req.req.equalsIgnoreCase("QUIT")) {
+                Object o = oin.readObject();
+                if (o instanceof request) {
+                    req = (request) o;
+                    System.out.println("Recebido \"" + req.req + "\" de " + toClientSocket.getInetAddress().getHostAddress() + ":" + toClientSocket.getPort() + "[" + req.user.getName() + "]");
 
-                    System.out.println("Unexpected request received from " + toClientSocket.getInetAddress().getHostAddress() + ":" + toClientSocket.getPort());
-                    String response ="Pedido nao esperado!";
+                    if (!req.req.equalsIgnoreCase("REGISTER")
+                            && !req.req.equalsIgnoreCase("LOGIN")
+                            && !req.req.equalsIgnoreCase("LOGOUT")
+                            && !req.req.equalsIgnoreCase("LIST")
+                            && !req.req.equalsIgnoreCase("SEND")
+                            && !req.req.equalsIgnoreCase("CHANGE")
+                            && !req.req.equalsIgnoreCase("QUIT")) {
 
-                    oout.writeObject(response);
-                    oout.flush();
-                    return;
+                        System.out.println("Unexpected request received from " + toClientSocket.getInetAddress().getHostAddress() + ":" + toClientSocket.getPort());
+                        String response = "Pedido nao esperado!";
 
-                }
-                switch (req.req) {
-                    case "REGISTER":
-                        if(userManager.checkUser(req.user)){
-                            String response = "User already exists";
+                        oout.writeObject(response);
+                        oout.flush();
+                        return;
 
-                            oout.writeObject(response);
-                            oout.flush();
-                        }else {
-                            userManager.createUser(req.user);
-                            String response = "Utilizador criado!";
+                    }
+                    switch (req.req) {
+                        case "REGISTER":
+                            if (userManager.checkUser(req.user)) {
+                                String response = "User already exists";
 
-                            oout.writeObject(response);
-                            oout.flush();
-                        }
-                        break;
+                                oout.writeObject(response);
+                                oout.flush();
+                            } else {
+                                userManager.createUser(req.user);
+                                String response = "Utilizador criado!";
+
+                                oout.writeObject(response);
+                                oout.flush();
+                            }
+                            break;
                         case "LOGIN":
-                            if(!userManager.checkUser(req.user)){
+                            if (!userManager.checkUser(req.user)) {
                                 String response = "Utilizador nao existente...";
 
                                 oout.writeObject(response);
                                 oout.flush();
                             }
-                            if(userManager.checkPassword(req.user.getEmail(), req.user.getPassword())) {
+                            if (userManager.checkPassword(req.user.getEmail(), req.user.getPassword())) {
                                 String response = "OK";
 
                                 oout.writeObject(response);
                                 oout.flush();
-                            }else{
+                            } else {
                                 String response = "Palavra passe incorreta";
 
                                 oout.writeObject(response);
                                 oout.flush();
                             }
                             break;
-                            case "LOGOUT", "QUIT":
-                                break;
-                                case "LIST":
-                                    StringBuilder sb = new StringBuilder();
-                                    int counter = 0;
-                                    for (event e : eventManager.getEvents()) {
-                                        if(e.checkPresenceEmail(req.user.getEmail())){
-                                            sb.append(e.toClientString());
-                                            counter++;
-                                        }
-                                    }
-                                    if(counter==0){
-                                        String response = "Nao foram encontrados eventos!";
+                        case "LOGOUT", "QUIT":
+                            break;
+                        case "LIST":
+                            StringBuilder sb = new StringBuilder();
+                            int counter = 0;
+                            for (event e : eventManager.getEvents()) {
+                                if (e.checkPresenceEmail(req.user.getEmail())) {
+                                    sb.append(e.toClientString());
+                                    counter++;
+                                }
+                            }
+                            if (counter == 0) {
+                                String response = "Nao foram encontrados eventos!";
 
-                                        oout.writeObject(response);
-                                        oout.flush();
-                            }else {
+                                oout.writeObject(response);
+                                oout.flush();
+                            } else {
                                 String header = "Descricao;Local;Data;HoraInicio\n";
-                                String response = header+sb+"\n";
+                                String response = header + sb + "\n";
 
                                 oout.writeObject(response);
                                 oout.flush();
@@ -138,19 +140,19 @@ class managerCLients implements Runnable {
                             break;
                         case "SEND":
                             //INSCREVER EM EVENTO
-                            System.out.println("Evento a subscrever: "+req.otherParam);
-                            if(req.otherParam == null){
+                            System.out.println("Evento a subscrever: " + req.otherParam);
+                            if (req.otherParam == null) {
                                 String response = "Nao foi fornecido nenhum codigo de evento";
 
                                 oout.writeObject(response);
                                 oout.flush();
                                 System.out.println("SEM EVENTO!");
                                 break;
-                            }else {
+                            } else {
                                 try {
                                     event ev = eventManager.getEventByCode(req.otherParam);
-                                    if(ev.checkPresenceEmail(req.user.getEmail())){
-                                        String response = "Ja se encontra inscrito ao evento "+ev.getName()+"!";
+                                    if (ev.checkPresenceEmail(req.user.getEmail())) {
+                                        String response = "Ja se encontra inscrito ao evento " + ev.getName() + "!";
 
                                         oout.writeObject(response);
                                         oout.flush();
@@ -159,11 +161,11 @@ class managerCLients implements Runnable {
                                     }
                                     ev.addPresence(userManager.getUser(req.user.getEmail()));
                                     eventManager.editEvent(ev.getId(), ev);
-                                    String response = "Inscrito ao Evento "+ev.getName()+"!";
+                                    String response = "Inscrito ao Evento " + ev.getName() + "!";
                                     System.out.println("SUBSCRITO!");
                                     oout.writeObject(response);
                                     oout.flush();
-                                }catch (NoSuchElementException e){
+                                } catch (NoSuchElementException e) {
 
                                     String response = "Evento nao encontrado";
 
@@ -175,16 +177,16 @@ class managerCLients implements Runnable {
 
                             break;
                         case "CHANGE":
-                            if(userManager.checkUser(req.user)){
-                                userManager.editUser(req.user.getEmail(),req.nUser);
+                            if (userManager.checkUser(req.user)) {
+                                userManager.editUser(req.user.getEmail(), req.nUser);
                                 String response = "ALTERADO";
 
                                 oout.writeObject(response);
                                 oout.flush();
-                                System.out.println("USER "+userManager.getUser(req.user.getEmail()).getName()+" ALTERADO!");
+                                System.out.println("USER " + userManager.getUser(req.user.getEmail()).getName() + " ALTERADO!");
 
 
-                            }else {
+                            } else {
                                 userManager.createUser(req.user);
                                 String response = "Falha na verificação do user!";
 
@@ -192,10 +194,11 @@ class managerCLients implements Runnable {
                                 oout.flush();
                             }
                             break;
+                    }
                 }
+            } catch (Exception e) {
+                System.out.println("Problema na comunicacao com o cliente " + toClientSocket.getInetAddress().getHostAddress() + ":" + toClientSocket.getPort() + "\n\t" + e);
             }
-        } catch (Exception e) {
-            System.out.println("Problema na comunicacao com o cliente " + toClientSocket.getInetAddress().getHostAddress() + ":" + toClientSocket.getPort() + "\n\t" + e);
         }
     }
 }
@@ -687,10 +690,10 @@ class KBMgmt implements Runnable{
                             String strID2 = sc.nextLine();
                             int id2 = Integer.parseInt(strID2);
                             System.out.println("Insira a validade do codigo (em minutos):");
-                            String strVal = sc.nextLine();
-                            int time = Integer.parseInt(strVal);
+                            int strVal = Integer.parseInt(sc.nextLine());
+                        //    int time = Integer.parseInt(strVal);
 
-                            eventManager.getEventById(id2).generateRandomCodeWithValidity(time);
+                            eventManager.getEventById(id2).generateRandomCodeWithValidity(strVal);
                             System.out.println("Codigo do evento: " + eventManager.getEventById(id2).getCode());
                             eventManager.updateEventDB(id2);
                             break;
@@ -835,7 +838,7 @@ public class server {
 
 
             //Thread to deal with the Server Backups
-            Thread mb = new Thread((Runnable) new ManagerBackups(RMI_NAME,REGESTRY_PORT,removeLastPath(DB_PATH)), "Thread_" + 1);
+            Thread mb = new Thread(new ManagerBackups(RMI_NAME,REGESTRY_PORT,removeLastPath(DB_PATH)), "Thread_" + 1);
             mb.start();
 
             //Thread to send the heartbeat every 10sec, gets versionManager to send the current version to the Servers
@@ -845,9 +848,10 @@ public class server {
             //Threads to handle the clients
             while (true) {
                 Socket toClientSocket = socket.accept();
-                thr = new Thread((Runnable) new managerCLients(toClientSocket, userManager,eventManager), "Thread_" + nCreatedThreads);
+                thr = new Thread(new managerCLients(toClientSocket, userManager,eventManager), "Thread_" + nCreatedThreads);
                 thr.start();
                 nCreatedThreads++;
+                System.out.println("nThreads -> " + nCreatedThreads);
             }
 
         } catch (NumberFormatException e) {

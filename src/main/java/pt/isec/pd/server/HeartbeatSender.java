@@ -52,7 +52,7 @@ public class HeartbeatSender implements Runnable {
             DatagramPacket packet = new DatagramPacket(data, data.length, group, 4444);
             socket.send(packet);
 
-            System.out.println("Heartbeat from server - " + currentVersion);
+       //     System.out.println("Heartbeat from server - " + currentVersion);
         } catch (IOException e) {
             e.printStackTrace();
         }
