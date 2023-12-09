@@ -1,8 +1,8 @@
 package pt.isec.pd.server;
 
-import java.io.Serializable;
-
 import pt.isec.pd.types.user;
+
+import java.io.Serializable;
 
 public class request implements Serializable {
 

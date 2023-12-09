@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.control.cell.*?>
+<?import javafx.scene.layout.*?>
+
+<SplitPane dividerPositions="0.29797979797979796" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="pt.isec.pd.gui.ClienteController">
+  <items>
+    <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0">
+         <children>
+             <Button fx:id="signBTN" layoutX="60.0" layoutY="36.0" mnemonicParsing="false" onAction="#onSignButton" text="Regstar" />
+             <Button fx:id="loginBTN" layoutX="64.0" layoutY="73.0" mnemonicParsing="false" onAction="#onLoginButton" text="Entrar" />
+             <Button fx:id="listBTN" layoutX="20.0" layoutY="122.0" mnemonicParsing="false" onAction="#onListButton" prefHeight="50.0" prefWidth="140.0" text="Listar eventos a que &#10;estou inscrito" textAlignment="CENTER" visible="false" />
+             <Button fx:id="exportBTN" layoutX="25.0" layoutY="187.0" mnemonicParsing="false" onAction="#onExportButton" text="Exportar para um .csv" visible="false" />
+             <Button fx:id="editBTN" layoutX="36.0" layoutY="264.0" mnemonicParsing="false" onAction="#onEditButton" text="Alterar dados da &#10;minha conta" textAlignment="CENTER" visible="false" />
+             <Button fx:id="codeBTN" layoutX="26.0" layoutY="228.0" mnemonicParsing="false" onAction="#onCodeButton" text="Inscrever em evento" textAlignment="CENTER" visible="false" />
+             <Button fx:id="exitBTN" layoutX="70.0" layoutY="320.0" mnemonicParsing="false" onAction="#onExitButton" text="Sair" />
+         </children>
+    </AnchorPane>
+    <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0">
+         <children>
+             <TextField fx:id="nameTF" layoutX="134.0" layoutY="105.0" visible="false" />
+             <TextField fx:id="nestudentTF" layoutX="135.0" layoutY="150.0" visible="false" />
+             <TextField fx:id="emailTF" layoutX="135.0" layoutY="199.0" visible="false" />
+             <TextField fx:id="passTF" layoutX="135.0" layoutY="246.0" visible="false" />
+             <Label fx:id="nameL" layoutX="87.0" layoutY="109.0" text="Nome:" visible="false" />
+             <Label fx:id="nestudentL" layoutX="51.0" layoutY="154.0" text="Nº estudante:" visible="false" />
+             <Label fx:id="emailL" layoutX="87.0" layoutY="203.0" text="E-mail:" visible="false" />
+             <Label fx:id="passL" layoutX="70.0" layoutY="250.0" text="Password:" visible="false" />
+             <Label fx:id="fileNameL" layoutX="152.0" layoutY="80.0" text="nome do ficheiro CSV" visible="false" />
+             <Button fx:id="submitSignBTN" layoutX="176.0" layoutY="312.0" mnemonicParsing="false" onAction="#onSignSubmit" text="Submeter" textAlignment="CENTER" visible="false" />
+             <Button fx:id="submitLoginBTN" layoutX="176.0" layoutY="312.0" mnemonicParsing="false" onAction="#onLoginSubmit" text="Submeter" textAlignment="CENTER" visible="false" />
+             <Button fx:id="submitEditBTN" layoutX="176.0" layoutY="312.0" mnemonicParsing="false" onAction="#onEditSubmit" text="Submeter" textAlignment="CENTER" visible="false" />
+             <Button fx:id="submitExportBTN" layoutX="176.0" layoutY="312.0" mnemonicParsing="false" onAction="#onExportSubmit" text="Submeter" textAlignment="CENTER" visible="false" />
+
+             <Button fx:id="submitCodeBTN" layoutX="259.0" layoutY="168.0" mnemonicParsing="false" onAction="#onCodeSubmit" text="Submeter código" visible="false" />
+             <TextField fx:id="submitCodeTF" layoutX="45.0" layoutY="168.0" prefHeight="25.0" prefWidth="205.0" promptText="Inserir código" visible="false" />
+
+             <TableView fx:id="tableTV" layoutX="45.0" layoutY="80.0" prefHeight="200.0" prefWidth="328.0" visible="false">
+                 <columns>
+                     <TableColumn fx:id="DescritionColumn" prefWidth="85.0" text="Descrição">
+                         <cellValueFactory>
+                             <PropertyValueFactory property="descricao" />
+                         </cellValueFactory>
+                    </TableColumn>
+                     <TableColumn fx:id="localColumn" prefWidth="82.0" text="Local">
+                         <cellValueFactory>
+                             <PropertyValueFactory property="local" />
+                         </cellValueFactory>
+                     </TableColumn>
+                     <TableColumn fx:id="DateColumn" prefWidth="91.0" text="Data">
+                         <cellValueFactory>
+                             <PropertyValueFactory property="data" />
+                         </cellValueFactory>
+                     </TableColumn>
+                     <TableColumn fx:id="HourColumn" prefWidth="69.0" text="Hora">
+                         <cellValueFactory>
+                             <PropertyValueFactory property="horaInicio" />
+                         </cellValueFactory>
+                     </TableColumn>
+                 </columns>
+             </TableView>
+
+         </children>
+    </AnchorPane>
+  </items>
+</SplitPane>

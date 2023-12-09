@@ -4,14 +4,9 @@ import pt.isec.pd.server.databaseManagement.EventDatabaseManager;
 import pt.isec.pd.types.event;
 import pt.isec.pd.types.user;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.PrintWriter;
-import java.util.Calendar;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.*;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Optional;
 
 public class eventManagement {
 

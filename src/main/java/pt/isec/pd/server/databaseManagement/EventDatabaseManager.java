@@ -1,8 +1,8 @@
 package pt.isec.pd.server.databaseManagement;
 
+import pt.isec.pd.server.eventManagement;
 import pt.isec.pd.types.event;
 import pt.isec.pd.types.user;
-import pt.isec.pd.server.eventManagement;
 
 import java.io.FileWriter;
 import java.io.IOException;

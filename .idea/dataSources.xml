@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
-    <data-source source="LOCAL" name="presences" uuid="76d448cb-238b-4a59-8870-d33baff034f6">
+    <data-source source="LOCAL" name="presences.db" uuid="be1f5399-8b33-4993-93c6-f63f93135cf4">
       <driver-ref>sqlite.xerial</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
-      <jdbc-url>jdbc:sqlite:C:\ISEC\LEI\2023.2024\PD\PD_Project\presences.db</jdbc-url>
+      <jdbc-url>jdbc:sqlite:$PROJECT_DIR$/presences.db</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
   </component>

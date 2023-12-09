@@ -1,12 +1,16 @@
 package pt.isec.pd.server;
 
 import java.io.*;
-import java.net.*;
+import java.net.DatagramPacket;
+import java.net.InetAddress;
+import java.net.MulticastSocket;
+import java.net.SocketTimeoutException;
 import java.rmi.Naming;
 import java.rmi.NoSuchObjectException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.Objects;
 
 public class ServerBackup {
     static String FILENAME = "presences.db";
@@ -25,10 +29,10 @@ public class ServerBackup {
             System.out.println("Sem permissoes de escrita na diretoria " + localDirectory);
             return false;
         }
-      /*  if (Objects.requireNonNull(localDirectory.list()).length != 0) {
+        if (Objects.requireNonNull(localDirectory.list()).length != 0) {
             System.out.println("A diretoria não está vazia.");
             return false;
-        }*/
+        }
         return true;
     }
 

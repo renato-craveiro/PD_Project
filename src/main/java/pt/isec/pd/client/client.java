@@ -1,13 +1,15 @@
 package pt.isec.pd.client;
 
+import javafx.application.Application;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.stage.Stage;
+import pt.isec.pd.gui.ClienteController;
 import pt.isec.pd.server.request;
 import pt.isec.pd.types.user;
 
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.Socket;
@@ -15,15 +17,14 @@ import java.util.Objects;
 import java.util.Scanner;
 
 
-
-
-public class client {
-    static user currUser, auxUser;
+public class client extends Application {
+    public static user currUser;
+    public static user auxUser;
     static String srvAdress;
     static int srvPort;
 
     static Socket socket;
-    public static String sendRequest(String reqStr){
+    public static String sendRequest(String reqStr, String receivedCode){ //if receivedCode=0 its because its graphip else its reading from cmd
         request req;// = new request();
 
         String response;
@@ -36,10 +37,14 @@ public class client {
                 return("Pedido nulo!");
             }
             if(reqStr.equalsIgnoreCase("SEND")){
-                System.out.println("Codigo do evento:");
-                Scanner sc = new Scanner(System.in);
-                int code = sc.nextInt();
-                req = new request(reqStr, currUser, String.valueOf(code));
+                if (!receivedCode.equals("0"))
+                    req = new request(reqStr, currUser, receivedCode);
+                else {
+                    System.out.println("Codigo do evento:");
+                    Scanner sc = new Scanner(System.in);
+                    int code = sc.nextInt();
+                    req = new request(reqStr, currUser, String.valueOf(code));
+                }
             }else{
                 req = new request(reqStr, currUser);
 
@@ -76,22 +81,24 @@ public class client {
         String password = sc.nextLine();
         user auxUser = new user(name, NEstudante, email, password);
         currUser = new user(name, NEstudante, email, password);
-        System.out.println("[Servidor]: "+sendRequest("REGISTER"));
+        System.out.println("[Servidor]: "+sendRequest("REGISTER","0"));
     }
 
-    public static void changeData(){
-        Scanner sc = new Scanner(System.in);
-        System.out.println("Nome:");
-        String name = sc.nextLine();
-        System.out.println("Número de estudante:");
-        String NEstudante = sc.nextLine();
-        System.out.println("Email:");
-        String email = sc.nextLine();
-        System.out.println("Password:");
-        String password = sc.nextLine();
-        auxUser = new user(name, NEstudante, email, password);
+    public static void changeData(boolean grafic){
+        if (!grafic) {
+            Scanner sc = new Scanner(System.in);
+            System.out.println("Nome:");
+            String name = sc.nextLine();
+            System.out.println("Número de estudante:");
+            String NEstudante = sc.nextLine();
+            System.out.println("Email:");
+            String email = sc.nextLine();
+            System.out.println("Password:");
+            String password = sc.nextLine();
+            auxUser = new user(name, NEstudante, email, password);
+        }
 
-        System.out.println("[Servidor]: "+sendRequest("CHANGE"));
+        System.out.println("[Servidor]: "+sendRequest("CHANGE","0"));
     }
 
     public static void login() throws IOException {
@@ -101,7 +108,7 @@ public class client {
         System.out.println("Password:");
         String password = sc.nextLine();
         currUser = new user("", "", email, password);
-        String rsp = sendRequest("LOGIN");
+        String rsp = sendRequest("LOGIN","0");
         if(rsp.equals("OK")) {
             System.out.println("Login efetuado com sucesso");
             while (appMenu()) {
@@ -127,16 +134,16 @@ public class client {
         switch (op){
             case 1:
 
-                System.out.println(sendRequest("LIST"));
+                System.out.println(sendRequest("LIST","0"));
                 return true;
             case 2:
                 subscribeEvent();
                 return true;
             case 3:
-                exportCSV();
+                exportCSV("cmd");
                 return true;
             case 4:
-                changeData();
+                changeData(false);
                 System.out.println("Efetue o seu login novamente");
                 return false;
 
@@ -151,23 +158,30 @@ public class client {
 
     }
 
-    private static void exportCSV() {
+    public static void exportCSV(String fileNameG) {
         try {
+            PrintWriter csvWriter;
+            String fileName = null;
 
-            Scanner sc = new Scanner(System.in);
-            System.out.println("Enter CSV file name:");
-            String fileName = sc.nextLine();
+            if (fileNameG.equals("cmd")) {
+                Scanner sc = new Scanner(System.in);
+                System.out.println("Enter CSV file name:");
+                fileName = sc.nextLine();
+                csvWriter = new PrintWriter(new FileWriter(fileName + ".csv"));
+            }else
+                csvWriter = new PrintWriter(new FileWriter(fileNameG + ".csv"));
 
 
-            PrintWriter csvWriter = new PrintWriter(new FileWriter(fileName + ".csv"));
-
-
-            String response = sendRequest("LIST");
+            String response = sendRequest("LIST","0");
 
             if (!response.isEmpty()) {
 
                 csvWriter.println(response);
-                System.out.println("CSV export successful. Data written to " + fileName);
+                if (fileNameG.equals("0"))
+                    System.out.println("CSV export successful. Data written to " + fileName);
+                else
+                    System.out.println("CSV export successful. Data written to " + fileNameG);
+
             } else {
                 System.out.println("Error exporting CSV: " + response);
             }
@@ -182,7 +196,7 @@ public class client {
         //Scanner sc = new Scanner(System.in);
         //System.out.println("Codigo do evento:");
         //int code = sc.nextInt();
-        System.out.println("[Servidor]: "+sendRequest("SEND"));
+        System.out.println("[Servidor]: "+sendRequest("SEND","0"));
     }
 
     public static boolean logMenu() throws IOException {
@@ -220,11 +234,11 @@ public class client {
 
         try (Socket connectionTest = new Socket(srvAdress, srvPort)) {
 
-            while(logMenu()){
+         /*   while(logMenu()){
                 System.out.println("Pressione enter para continuar");
                 System.in.read();
             }
-
+            */launch(args);
         } catch (ConnectException e) {
             throw new Exception("Server nao esta a correr");
         } catch (IOException e) {
@@ -233,5 +247,25 @@ public class client {
 
 
     }
+
+    @Override
+    public void start(Stage primaryStage) throws Exception {
+        // Carrega o arquivo FXML
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/pt/isec/pd/client.fxml"));
+        Parent root = loader.load();
+
+        // Obtém o controlador do FXML
+        ClienteController controlador = loader.getController();
+
+        // Configura a cena e exibe a janela
+        Scene scene = new Scene(root);
+        primaryStage.setScene(scene);
+        primaryStage.setTitle("Cliente JavaFX");
+        primaryStage.show();
+
+        // Configura a lógica do cliente no controlador
+        controlador.setClienteSocket(srvAdress, srvPort);
+    }
+
 
 }

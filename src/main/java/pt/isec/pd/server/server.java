@@ -7,14 +7,14 @@ import pt.isec.pd.types.event;
 import pt.isec.pd.types.user;
 
 import java.io.*;
-import java.net.*;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -51,7 +51,6 @@ class managerCLients implements Runnable {
     @Override
     public void run(){
 
-
         {
             request req;
             try (
@@ -61,7 +60,7 @@ class managerCLients implements Runnable {
                 Object o = oin.readObject();
                 if (o instanceof request) {
                     req = (request) o;
-                    System.out.println("Recebido \"" + req.req + "\" de " + toClientSocket.getInetAddress().getHostAddress() + ":" + toClientSocket.getPort() + "[" + req.user.getName() + "]");
+                    System.out.println("Recebido \"" + req.req /*+ "\" de " + toClientSocket.getInetAddress().getHostAddress() + ":" + toClientSocket.getPort() + "[" + req.user.getName() + "]"*/);
 
                     if (!req.req.equalsIgnoreCase("REGISTER")
                             && !req.req.equalsIgnoreCase("LOGIN")
@@ -121,6 +120,7 @@ class managerCLients implements Runnable {
                             for (event e : eventManager.getEvents()) {
                                 if (e.checkPresenceEmail(req.user.getEmail())) {
                                     sb.append(e.toClientString());
+                                    sb.append("\n");
                                     counter++;
                                 }
                             }
@@ -245,7 +245,6 @@ class ManagerBackups extends UnicastRemoteObject implements ServerBackupServiceI
         int nbytes;
 
         dbName = dbName.trim();
-        //System.out.println("Recebido pedido para: " + fileName);
 
         try(FileInputStream requestedFileInputStream = getRequestedFileInputStream(dbName)){
 
@@ -851,7 +850,6 @@ public class server {
                 thr = new Thread(new managerCLients(toClientSocket, userManager,eventManager), "Thread_" + nCreatedThreads);
                 thr.start();
                 nCreatedThreads++;
-                System.out.println("nThreads -> " + nCreatedThreads);
             }
 
         } catch (NumberFormatException e) {
