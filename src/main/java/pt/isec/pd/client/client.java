@@ -10,9 +10,8 @@ import pt.isec.pd.server.request;
 import pt.isec.pd.types.user;
 
 import java.io.*;
-import java.net.ConnectException;
-import java.net.InetAddress;
-import java.net.Socket;
+import java.net.*;
+import java.util.Base64;
 import java.util.Objects;
 import java.util.Scanner;
 
@@ -32,6 +31,14 @@ public class client extends Application {
             ObjectInputStream oin = new ObjectInputStream(socket.getInputStream());
             ObjectOutputStream oout = new ObjectOutputStream(socket.getOutputStream())){
 
+            System.out.println("OOOOOOO CARL");
+            String helloUri = "http://10.65.136.232:8080/login";
+            String str="admin:admin";
+            String token = sendRequestAndShowResponse(helloUri, "POST", "basic "+ Base64.getEncoder().encodeToString(str.getBytes()));
+            System.out.println(token);
+            String helloUri2 = "http://10.65.136.232:8080/usercalls/createdEvents";
+
+            sendRequestAndShowResponse(helloUri2, "GET", "bearer "+token);
             socket.setSoTimeout(TIMEOUT*1000);
             if(reqStr == null){
                 return("Pedido nulo!");
@@ -40,9 +47,12 @@ public class client extends Application {
                 if (!receivedCode.equals("0"))
                     req = new request(reqStr, currUser, receivedCode);
                 else {
+                   // System.out.println("Aqui???");
+
                     System.out.println("Codigo do evento:");
                     Scanner sc = new Scanner(System.in);
                     int code = sc.nextInt();
+
                     req = new request(reqStr, currUser, String.valueOf(code));
                 }
             }else{
@@ -109,6 +119,7 @@ public class client extends Application {
         String password = sc.nextLine();
         currUser = new user("", "", email, password);
         String rsp = sendRequest("LOGIN","0");
+
         if(rsp.equals("OK")) {
             System.out.println("Login efetuado com sucesso");
             while (appMenu()) {
@@ -265,6 +276,60 @@ public class client extends Application {
 
         // Configura a lógica do cliente no controlador
         controlador.setClienteSocket(srvAdress, srvPort);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    public static String sendRequestAndShowResponse(String uri, String verb, String authorizationValue) throws MalformedURLException, IOException {
+
+        String responseBody = null;
+        URL url = new URL(uri);
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+
+        connection.setRequestMethod(verb);
+        connection.setRequestProperty("Accept", "application/xml, */*");
+
+        if(authorizationValue!=null) {
+            connection.setRequestProperty("Authorization", authorizationValue);
+        }
+
+        connection.connect();
+
+        int responseCode = connection.getResponseCode();
+        System.out.println("Response code: " +  responseCode + " (" + connection.getResponseMessage() + ")");
+
+        Scanner s;
+
+        if(connection.getErrorStream()!=null) {
+            s = new Scanner(connection.getErrorStream()).useDelimiter("\\A");
+            responseBody = s.hasNext() ? s.next() : null;
+        }
+
+        try {
+            s = new Scanner(connection.getInputStream()).useDelimiter("\\A");
+            responseBody = s.hasNext() ? s.next() : null;
+        } catch (IOException e){}
+
+        connection.disconnect();
+
+        System.out.println(verb + " " + uri + " -> " + responseBody);
+        System.out.println();
+
+        return responseBody;
     }
 
 
